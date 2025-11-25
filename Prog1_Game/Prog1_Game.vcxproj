@@ -26,16 +26,16 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <!-- Search libraries -->
-	<PropertyGroup>
-		<!-- Define the fixed library path as a variable -->
-		<Prog1FixedPath>c:\Prog1\Libraries</Prog1FixedPath>
-		<!-- Check if Prog1FixedPath exists; if it does, use it; otherwise, use Prog1LibPath environment variable -->
-		<Prog1LibrariesPath Condition="Exists('$(Prog1FixedPath)')">$(Prog1FixedPath)</Prog1LibrariesPath>
-		<!-- If Prog1FixedPath doesn't exist or is empty, use Prog1LibPath environment variable -->
-		<Prog1LibrariesPath Condition="!Exists('$(Prog1FixedPath)')">$(Prog1LibPath)</Prog1LibrariesPath>
-		<!-- Check if neither the fixed path nor the environment variable is defined; generate an error in this case -->
-		<Error Condition="!Exists('$(Prog1FixedPath)') And '$(Prog1LibPath)' == ''">!! DEAR STUDENT !! The requested library path is not set on your computer; please check the game project setup instructions and try again.</Error>
-	</PropertyGroup>
+  <PropertyGroup>
+    <!-- Define the fixed library path as a variable -->
+    <Prog1FixedPath>c:\Prog1\Libraries</Prog1FixedPath>
+    <!-- Check if Prog1FixedPath exists; if it does, use it; otherwise, use Prog1LibPath environment variable -->
+    <Prog1LibrariesPath Condition="Exists('$(Prog1FixedPath)')">$(Prog1FixedPath)</Prog1LibrariesPath>
+    <!-- If Prog1FixedPath doesn't exist or is empty, use Prog1LibPath environment variable -->
+    <Prog1LibrariesPath Condition="!Exists('$(Prog1FixedPath)')">$(Prog1LibPath)</Prog1LibrariesPath>
+    <!-- Check if neither the fixed path nor the environment variable is defined; generate an error in this case -->
+    <Error Condition="!Exists('$(Prog1FixedPath)') And '$(Prog1LibPath)' == ''">!! DEAR STUDENT !! The requested library path is not set on your computer; please check the game project setup instructions and try again.</Error>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -208,6 +208,7 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="MyUtils.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -217,6 +218,7 @@ xcopy "$(SolutionDir)Resources\*.*" "$(TargetDir)" /y /d /s</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h" />
+    <ClInclude Include="MyUtils.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
