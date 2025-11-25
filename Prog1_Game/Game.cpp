@@ -85,7 +85,7 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 	//const float mouseX{ float(e.x) };
 	//const float mouseY{ float(e.y) };
 	//std::cout << "  [" << mouseX << ", " << mouseY << "]\n";
-	
+
 	// SAMPLE CODE: check which mouse button was pressed
 	//switch (e.button)
 	//{

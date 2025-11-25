@@ -123,7 +123,7 @@ namespace utils
 
 	void DrawEllipse(float centerX, float centerY, float radX, float radY, float lineWidth)
 	{
-		float dAngle{ radX > radY ? float(g_Pi / radX) : float(g_Pi / radY) };
+		float dAngle {radX > radY ? float(g_Pi / radX) : float(g_Pi / radY)};
 
 		glLineWidth(lineWidth);
 		glBegin(GL_LINE_LOOP);
@@ -148,7 +148,7 @@ namespace utils
 
 	void FillEllipse(float centerX, float centerY, float radX, float radY)
 	{
-		float dAngle{ radX > radY ? float(g_Pi / radX) : float(g_Pi / radY) };
+		float dAngle {radX > radY ? float(g_Pi / radX) : float(g_Pi / radY)};
 
 		glBegin(GL_POLYGON);
 		{
@@ -182,7 +182,7 @@ namespace utils
 		tillAngle *= -1;
 		std::swap(fromAngle, tillAngle); //from becomes to and vice versa
 
-		float dAngle{ radX > radY ? float(g_Pi / radX) : float(g_Pi / radY) };
+		float dAngle {radX > radY ? float(g_Pi / radX) : float(g_Pi / radY)};
 
 		glLineWidth(lineWidth);
 		glBegin(GL_LINE_STRIP);
@@ -214,7 +214,7 @@ namespace utils
 		tillAngle *= -1;
 		std::swap(fromAngle, tillAngle); //from becomes to and vice versa
 
-		float dAngle{ radX > radY ? float(g_Pi / radX) : float(g_Pi / radY) };
+		float dAngle {radX > radY ? float(g_Pi / radX) : float(g_Pi / radY)};
 
 		glBegin(GL_POLYGON);
 		{
@@ -243,7 +243,7 @@ namespace utils
 		glLineWidth(lineWidth);
 		closed ? glBegin(GL_LINE_LOOP) : glBegin(GL_LINE_STRIP);
 		{
-			for (size_t idx{ 0 }; idx < nrVertices; ++idx)
+			for (size_t idx {0}; idx < nrVertices; ++idx)
 			{
 				glVertex2f(pVertices[idx].x, pVertices[idx].y);
 			}
@@ -260,7 +260,7 @@ namespace utils
 	{
 		glBegin(GL_POLYGON);
 		{
-			for (size_t idx{ 0 }; idx < nrVertices; ++idx)
+			for (size_t idx {0}; idx < nrVertices; ++idx)
 			{
 				glVertex2f(pVertices[idx].x, pVertices[idx].y);
 			}
@@ -293,7 +293,7 @@ namespace utils
 	bool TextureFromString(const std::string& text, const std::string& fontPath, int ptSize, const Color4f& textColor, Texture& texture)
 	{
 		// Create font
-		TTF_Font* pFont{};
+		TTF_Font* pFont {};
 		pFont = TTF_OpenFont(("..\\" + fontPath).c_str(), ptSize);
 		if (pFont == nullptr)
 		{
@@ -318,7 +318,7 @@ namespace utils
 		}
 
 		//Render text surface
-		SDL_Color textColor{};
+		SDL_Color textColor {};
 		textColor.r = Uint8(color.r * 255);
 		textColor.g = Uint8(color.g * 255);
 		textColor.b = Uint8(color.b * 255);
@@ -348,7 +348,7 @@ namespace utils
 		texture.height = float(pSurface->h);
 
 		// Get pixel format information and translate to OpenGl format
-		GLenum pixelFormat{ GL_RGB };
+		GLenum pixelFormat {GL_RGB};
 		switch (pSurface->format->BytesPerPixel)
 		{
 		case 3:
@@ -433,7 +433,7 @@ namespace utils
 
 	void DrawTexture(const Texture& texture, const Point2f& dstTopLeft, const Rectf& srcRect)
 	{
-		Rectf dstRect{ dstTopLeft.x, dstTopLeft.y, srcRect.width, srcRect.height };
+		Rectf dstRect {dstTopLeft.x, dstTopLeft.y, srcRect.width, srcRect.height};
 		DrawTexture(texture, dstRect, srcRect);
 	}
 
@@ -441,20 +441,20 @@ namespace utils
 	void DrawTexture(const Texture& texture, const Rectf& dstRect, const Rectf& srcRect)
 	{
 		// Determine texture coordinates using srcRect and default destination width and height
-		float textLeft{};
-		float textRight{};
-		float textTop{};
-		float textBottom{};
+		float textLeft {};
+		float textRight {};
+		float textTop {};
+		float textBottom {};
 
-		float defaultDstWidth{};
-		float defaultDstHeight{};
+		float defaultDstWidth {};
+		float defaultDstHeight {};
 		if (!(srcRect.width > 0.0f && srcRect.height > 0.0f)) // No srcRect specified
 		{
 			// Use complete texture
 			textLeft = 0.0f;
 			textRight = 1.0f;
-			textTop = 0.0f;				
-			textBottom = 1.0f;			
+			textTop = 0.0f;
+			textBottom = 1.0f;
 
 			defaultDstHeight = texture.height;
 			defaultDstWidth = texture.width;
@@ -471,10 +471,10 @@ namespace utils
 		}
 
 		// Determine vertex coordinates
-		float vertexTop{ dstRect.top };
-		float vertexLeft{ dstRect.left };
-		float vertexBottom{};
-		float vertexRight{};
+		float vertexTop {dstRect.top};
+		float vertexLeft {dstRect.left};
+		float vertexBottom {};
+		float vertexRight {};
 		if (!(dstRect.width > 0.001f && dstRect.height > 0.001f)) // If no size specified use default size
 		{
 			vertexRight = vertexLeft + defaultDstWidth;

@@ -4,11 +4,11 @@ using namespace utils;
 
 #pragma region gameInformation
 // TODO: Set your name and group in the title here
-std::string g_WindowTitle{ "Prog1-Game - Unholy C{ Tim Scheuer, Arno Buyckx } - 1GDE" };
+std::string g_WindowTitle {"Prog1-Game - Unholy C{ Tim Scheuer, Arno Buyckx } - 1GDE"};
 
 // Change the window dimensions here
-float g_WindowWidth{ 800 };
-float g_WindowHeight{ 600 };
+float g_WindowWidth {800};
+float g_WindowHeight {600};
 #pragma endregion gameInformation
 
 

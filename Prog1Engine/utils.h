@@ -5,7 +5,7 @@
 namespace utils
 {
 
-	const float g_Pi{ 3.1415926535f };
+	const float g_Pi {3.1415926535f};
 
 #pragma region OpenGLDrawFunctionality
 	void ClearBackground(float r, float g, float b);
