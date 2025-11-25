@@ -52,6 +52,7 @@ namespace utils
 	void DrawPolygon(const Point2f* pVertices, size_t nrVertices, bool closed = true, float lineWidth = 1.0f);
 	void FillPolygon(const std::vector<Point2f>& vertices);
 	void FillPolygon(const Point2f* pVertices, size_t nrVertices);
+
 #pragma endregion OpenGLDrawFunctionality
 
 #pragma region TextureFunctionality
@@ -69,10 +70,44 @@ namespace utils
 	void DrawTexture(const Texture& texture, const Point2f& dstTopLeft, const Rectf& srcRect = {});
 	void DrawTexture(const Texture& texture, const Rectf& dstRect, const Rectf& srcRect = {});
 	void DeleteTexture(Texture& texture);
+	Color4f* GetPixelsFromTexture(const Texture& texture);
 #pragma endregion TextureFunctionality
 
 #pragma region CollisionFunctionality
 
+	float GetDistance(const Point2f& p1, const Point2f& p2);
+	float GetDistance(float x1, float y1, float x2, float y2);
+	bool IsPointInCircle(const Point2f& point, const Circlef& circle);
+	bool IsPointInCircle(const Point2f& point, const Point2f& cirlcePos, float radius);
+	bool IsPointInCircle(float x1, float y1, float circleX, float cirlceY, float radius);
+	bool IsPointInRect(const Point2f& point, const Rectf& rect);
+	bool IsPointInRect(const Point2f& point, const Point2f& rectPos, float width, float height);
+	bool IsPointInRect(const Point2f& point, float left, float top, float width, float height);
+	bool IsPointInRect(float x, float y, float left, float top, float width, float height);
+	bool IsOverlapping(const Circlef& c1, const Circlef& c2);
+	bool IsOverlapping(const Rectf& r1, const Rectf& r2);
 #pragma endregion CollisionFunctionality
 
+#pragma region Vectors
+
+	Point2f Add(const Point2f& v1, const Point2f& v2);
+	Point2f Add(float x1, float y1, float x2, float y2);
+	Point2f Subtract(const Point2f& v1, const Point2f& v2);
+	Point2f Subtract(float x1, float y1, float x2, float y2);
+	float DotProduct(const Point2f& v1, const Point2f& v2);
+	float DotProduct(float x1, float y1, float x2, float y2);
+	float CrossProduct(const Point2f& v1, const Point2f& v2);
+	float CrossProduct(float x1, float y1, float x2, float y2);
+	std::string VectorToString(const Point2f& v);
+	std::string VectorToString(float x, float y);
+	Point2f Scale(const Point2f& v, float s);
+	float Length(const Point2f& v);
+	Point2f Normalize(const Point2f& v);
+	float AngleBetween(const Point2f& v1, const Point2f& v2);
+	static bool InRange(float number, float min, float max);
+	bool AreEqual(const Point2f& v1, const Point2f& v2);
+	Point2f VectorRotate(const Point2f& vector, float radians);
+
+	void DrawVector(const Point2f& vector, const Point2f& startingPoint = Point2f {0.f, 0.f}, const float lineWidth = 1.f);
+#pragma endregion Vectors
 }

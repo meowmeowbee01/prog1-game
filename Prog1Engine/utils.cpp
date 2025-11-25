@@ -512,11 +512,215 @@ namespace utils
 		glDisable(GL_TEXTURE_2D);
 
 	}
+
+	// Function to load the pixels (colors) from a texture
+	Color4f* GetPixelsFromTexture(const Texture& texture)
+	{
+		// Bind the texture to read its data:
+		glBindTexture(GL_TEXTURE_2D, texture.id);
+		int numPixels { };
+		Color4f* pArrPixelColors {new Color4f[numPixels]};
+		const int cols = int(texture.width);
+		const int rows = int(texture.height);
+		numPixels = cols * rows;
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pArrPixelColors); //loads pixel data from texture into array
+		// Unbind the texture:
+		glBindTexture(GL_TEXTURE_2D, 0);
+		// => think carefully: should you delete[] it before returning to avoid unreleased memory or not?
+		return pArrPixelColors;
+	}
+
 #pragma endregion textureImplementations
 
 
 #pragma region CollisionFunctionality
 
+	float GetDistance(const Point2f& p1, const Point2f& p2)
+	{
+		Point2f distanceVector
+		{
+			p2.x - p1.x,
+			p2.y - p1.y
+		};
 
+		return (sqrtf(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y));
+	}
+	float GetDistance(float x1, float y1, float x2, float y2)
+	{
+		Point2f distanceVector
+		{
+			x2 - x1,
+			y2 - y1
+		};
+
+		return (sqrtf(distanceVector.x * distanceVector.x + distanceVector.y * distanceVector.y));
+	}
+
+	bool IsPointInCircle(const Point2f& point, const Circlef& circle)
+	{
+		return GetDistance(point, circle.center) < circle.radius;
+	}
+	bool IsPointInCircle(const Point2f& point, const Point2f& cirlcePos, float radius)
+	{
+		return GetDistance(point, cirlcePos) < radius;
+	}
+	bool IsPointInCircle(float x1, float y1, float circleX, float cirlceY, float radius)
+	{
+		return GetDistance(x1, y1, circleX, cirlceY) < radius;
+	}
+
+	bool IsPointInRect(const Point2f& point, const Rectf& rect)
+	{
+		return point.x < rect.left + rect.width && point.x > rect.left &&
+			point.y < rect.top + rect.height && point.y > rect.top;
+	}
+	bool IsPointInRect(const Point2f& point, const Point2f& rectPos, float width, float height)
+	{
+		return point.x < rectPos.x + width && point.x > rectPos.x &&
+			point.y < rectPos.y + height && point.y > rectPos.y;
+	}
+	bool IsPointInRect(const Point2f& point, float left, float top, float width, float height)
+	{
+		return point.x < left + width && point.x > left &&
+			point.y < top + height && point.y > top;
+	}
+	bool IsPointInRect(float x, float y, float left, float top, float width, float height)
+	{
+		return x < left + width && x > left &&
+			y < top + height && y > top;
+	}
+	bool IsOverlapping(const Circlef& c1, const Circlef& c2)
+	{
+		return GetDistance(c1.center, c2.center) < c1.radius + c2.radius;
+	}
+	bool IsOverlapping(const Rectf& rect1, const Rectf& rect2)
+	{
+		const Point2f l1 {rect1.left, rect1.top + rect1.height};
+		const Point2f r1 {rect1.left + rect1.width, rect1.top};
+
+		const Point2f l2 {rect2.left, rect2.top + rect2.height};
+		const Point2f r2 {rect2.left + rect2.width, rect2.top};
+
+		if (l1.x > r2.x || l2.x > r1.x) return false;
+
+		if (r1.y > l2.y || r2.y > l1.y) return false;
+
+		return true;
+	}
 #pragma endregion CollisionFunctionality
+
+#pragma region Vectors
+
+	Point2f Add(const Point2f& v1, const Point2f& v2)
+	{
+		return Point2f {v1.x + v2.x, v1.y + v2.y};
+	}
+
+	Point2f Add(float x1, float y1, float x2, float y2)
+	{
+		return Add(Point2f {x1, y1}, Point2f {x2, y2});
+	}
+
+	Point2f Subtract(const Point2f& v1, const Point2f& v2)
+	{
+		return Point2f {v1.x - v2.x, v1.y - v2.y};
+	}
+	Point2f Subtract(float x1, float y1, float x2, float y2)
+	{
+		return Subtract(Point2f {x1, y1}, Point2f {x2, y2});
+	}
+
+	float DotProduct(const Point2f& v1, const Point2f& v2)
+	{
+		return (v1.x * v2.x) + (v1.y * v2.y);
+	}
+	float DotProduct(float x1, float y1, float x2, float y2)
+	{
+		return DotProduct(Point2f {x1, y1}, Point2f {x2, y2});
+	}
+
+	float CrossProduct(const Point2f& v1, const Point2f& v2)
+	{
+		return (v1.x * v2.y) - (v1.y * v2.x);
+	}
+	float CrossProduct(float x1, float y1, float x2, float y2)
+	{
+		return CrossProduct(Point2f {x1, y1}, Point2f {x2, y2});
+	}
+
+	std::string VectorToString(const Point2f& v)
+	{
+		return '[' + std::to_string(v.x) + ", " + std::to_string(v.y) + ']';
+	}
+	std::string VectorToString(float x, float y)
+	{
+		return VectorToString(Point2f {x, y});
+	}
+
+	Point2f Scale(const Point2f& v, float s)
+	{
+		return Point2f {v.x * s, v.y * s};
+	}
+
+	float Length(const Point2f& v)
+	{
+		return sqrtf(v.x * v.x + v.y * v.y);
+	}
+
+	Point2f Normalize(const Point2f& v)
+	{
+		return Scale(v, 1.f / Length(v));
+	}
+
+	float AngleBetween(const Point2f& v1, const Point2f& v2)
+	{
+		return atan2f(CrossProduct(v1, v2), DotProduct(v1, v2));
+	}
+
+	static bool InRange(float number, float min, float max)
+	{
+		return number < max && number > min;
+	}
+
+	bool AreEqual(const Point2f& v1, const Point2f& v2)
+	{
+		return InRange(Subtract(v1, v2).x, -0.001f, 0.001f) && InRange(Subtract(v1, v2).y, -0.001f, 0.001f);
+	}
+
+	Point2f VectorRotate(const Point2f& vector, float radians)
+	{
+		return Point2f
+		{
+			vector.x * cosf(radians) - vector.y * sinf(radians),
+			vector.x * sinf(radians) + vector.y * cosf(radians)
+		};
+	}
+
+	void DrawVector(const Point2f& vector, const Point2f& startingPoint, const float lineWidth)
+	{
+		const Point2f endPoint {Add(vector, startingPoint).x, Add(vector, startingPoint).y};
+
+		DrawLine(startingPoint, endPoint, lineWidth);
+
+		const float sideWidth {10.f};
+		const float pi {3.1415f};
+		const float angle {atan2f(vector.y, vector.x)};
+		const float pointerAngle {30.f * (pi / 180.f)};
+
+		const Point2f pt2
+		{
+			endPoint.x - (sideWidth * cosf(angle - pointerAngle)),
+			endPoint.y - (sideWidth * sinf(angle - pointerAngle))
+		};
+		const Point2f pt3
+		{
+			endPoint.x - (sideWidth * cosf(angle + pointerAngle)),
+			endPoint.y - (sideWidth * sinf(angle + pointerAngle))
+		};
+
+		const Point2f top {endPoint};
+
+		FillTriangle(top, pt2, pt3);
+	}
+#pragma endregion Vectors
 }
