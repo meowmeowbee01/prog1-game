@@ -3,35 +3,26 @@
 #include <iostream>
 #include "MyUtils.h"
 
-//Basic game functions
-#pragma region gameFunctions											
+#pragma region gameFunctions
 void Start()
 {
-	// initialize game resources here
+
 }
 
 void Draw()
 {
-	ClearBackground();
+	ClearBackground(0.f, 0.f, 0.f);
 
-	// Put your own draw statements here
 
+	const float smallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
+	const float padding {smallestWindowLength * 0.05f}; //space between edge of screen and grid
+	const float margin {smallestWindowLength * 0.025f}; //space between grid elements
+	DrawGrid(padding, margin);
 }
 
 void Update(float elapsedSec)
 {
-	// process input, do physics 
 
-	// e.g. Check keyboard state
-	//const Uint8 *pStates = SDL_GetKeyboardState( nullptr );
-	//if ( pStates[SDL_SCANCODE_RIGHT] )
-	//{
-	//	std::cout << "Right arrow key is down\n";
-	//}
-	//if ( pStates[SDL_SCANCODE_LEFT] && pStates[SDL_SCANCODE_UP])
-	//{
-	//	std::cout << "Left and up arrow keys are down\n";
-	//}
 }
 
 void End()
@@ -40,8 +31,7 @@ void End()
 }
 #pragma endregion gameFunctions
 
-//Keyboard and mouse input handling
-#pragma region inputHandling											
+#pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key)
 {
 
@@ -49,61 +39,58 @@ void OnKeyDownEvent(SDL_Keycode key)
 
 void OnKeyUpEvent(SDL_Keycode key)
 {
-	//switch (key)
-	//{
-	//case SDLK_LEFT:
-	//	//std::cout << "Left arrow key released\n";
-	//	break;
-	//case SDLK_RIGHT:
-	//	//std::cout << "Right arrow key released\n";
-	//	break;
-	//case SDLK_1:
-	//case SDLK_KP_1:
-	//	//std::cout << "Key 1 released\n";
-	//	break;
-	//}
+
 }
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
 {
-	// SAMPLE CODE: print mouse position
-	//const float mouseX{ float(e.x) };
-	//const float mouseY{ float(e.y) };
-	//std::cout << "  [" << mouseX << ", " << mouseY << "]\n";
+
 }
 
 void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
 {
-	// SAMPLE CODE: print mouse position
-	//const float mouseX{ float(e.x) };
-	//const float mouseY{ float(e.y) };
-	//std::cout << "  [" << mouseX << ", " << mouseY << "]\n";
+
 }
 
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
-	// SAMPLE CODE: print mouse position
-	//const float mouseX{ float(e.x) };
-	//const float mouseY{ float(e.y) };
-	//std::cout << "  [" << mouseX << ", " << mouseY << "]\n";
 
-	// SAMPLE CODE: check which mouse button was pressed
-	//switch (e.button)
-	//{
-	//case SDL_BUTTON_LEFT:
-	//	//std::cout << "Left mouse button released\n";
-	//	break;
-	//case SDL_BUTTON_RIGHT:
-	//	//std::cout << "Right mouse button released\n";
-	//	break;
-	//case SDL_BUTTON_MIDDLE:
-	//	//std::cout << "Middle mouse button released\n";
-	//	break;
-	//}
 }
 #pragma endregion inputHandling
 
 #pragma region ownDefinitions
-// Define your own functions here
+void DrawGrid(const float padding, const float margin)
+{
+	const float maxCellWidth {(g_WindowWidth - 2.f * padding - static_cast<float>(g_Collumns - 1) * margin) / g_Collumns};
+	const float maxCellHeight {(g_WindowHeight - 2.f * padding - static_cast<float>(g_Rows - 1) * margin) / g_Rows};
+	const float cellSize {maxCellWidth < maxCellHeight ? maxCellWidth : maxCellHeight};
+	const float gridWidth {cellSize * g_Collumns + 2.f * padding + static_cast<float>(g_Collumns - 1) * margin};
+	const float gridHeight {cellSize * g_Rows + 2.f * padding + static_cast<float>(g_Rows - 1) * margin};
 
+	float horizontalOffset {0};
+	float verticalOffset {0};
+	if (g_WindowWidth > g_WindowHeight)
+	{
+		horizontalOffset = g_WindowWidth * 0.5f - gridWidth * 0.5f;
+	}
+	else
+	{
+		verticalOffset = g_WindowHeight * 0.5f - gridHeight * 0.5f;
+	}
+
+	for (int i {0}; i < g_Rows; ++i)
+	{
+		for (int j {0}; j < g_Collumns; ++j)
+		{
+
+			const Point2f topLeft
+			{
+				horizontalOffset + padding + static_cast<float>(j) * cellSize + static_cast<float>(j) * margin,
+				verticalOffset + padding + static_cast<float>(i) * cellSize + static_cast<float>(i) * margin
+			};
+
+			FillRect(topLeft, cellSize, cellSize);
+		}
+	}
+}
 #pragma endregion ownDefinitions
