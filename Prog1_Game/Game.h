@@ -12,16 +12,40 @@ float g_WindowHeight {700};
 
 
 #pragma region ownDeclarations
+enum class Cellstate
+{
+	empty,
+	path,
+	occupied
+};
 struct Cell
 {
-
+	Cellstate state;
 };
 
-const int g_Rows {5};
-const int g_Collumns {3};
-const Cell g_Grid[g_Rows][g_Collumns] {};
+const int g_Rows {15};
+const int g_Collumns {25};
+Cell g_Grid[g_Rows][g_Collumns] {};
 
-void DrawGrid(const float padding, const float margin);
+#pragma region scaleAndCenterGridConstants
+const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
+const float g_Padding {g_SmallestWindowLength * 0.025f}; //space between edge of screen and grid
+const float g_Margin {g_SmallestWindowLength * 0.0125f}; //space between grid elements
+const float g_MaxCellWidth {(g_WindowWidth - 2.f * g_Padding - static_cast<float>(g_Collumns - 1) * g_Margin) / g_Collumns};
+const float g_MaxCellHeight {(g_WindowHeight - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
+const float g_CellSize {g_MaxCellWidth < g_MaxCellHeight ? g_MaxCellWidth : g_MaxCellHeight};
+const float g_GridWidth {g_CellSize * g_Collumns + 2.f * g_Padding + static_cast<float>(g_Collumns - 1) * g_Margin};
+const float g_GridHeight {g_CellSize * g_Rows + 2.f * g_Padding + static_cast<float>(g_Rows - 1) * g_Margin};
+const bool g_IsOffsetHorizontal {g_WindowWidth / g_GridWidth > g_WindowHeight / g_GridHeight};
+const Point2f g_GridTopLeft
+{
+	g_IsOffsetHorizontal ? g_WindowWidth * 0.5f - g_GridWidth * 0.5f : 0.f,
+	g_IsOffsetHorizontal ? 0.f : g_WindowHeight * 0.5f - g_GridHeight * 0.5f
+};
+#pragma endregion scaleAndCenterGridConstants
+
+void DrawGrid();
+Rectf GetRectFromGridPosition(int row, int column);
 #pragma endregion ownDeclarations
 
 #pragma region gameFunctions

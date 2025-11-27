@@ -13,11 +13,7 @@ void Draw()
 {
 	ClearBackground(0.f, 0.f, 0.f);
 
-
-	const float smallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
-	const float padding {smallestWindowLength * 0.05f}; //space between edge of screen and grid
-	const float margin {smallestWindowLength * 0.025f}; //space between grid elements
-	DrawGrid(padding, margin);
+	DrawGrid();
 }
 
 void Update(float elapsedSec)
@@ -59,38 +55,27 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 #pragma endregion inputHandling
 
 #pragma region ownDefinitions
-void DrawGrid(const float padding, const float margin)
+Rectf GetRectFromGridPosition(int row, int column)
 {
-	const float maxCellWidth {(g_WindowWidth - 2.f * padding - static_cast<float>(g_Collumns - 1) * margin) / g_Collumns};
-	const float maxCellHeight {(g_WindowHeight - 2.f * padding - static_cast<float>(g_Rows - 1) * margin) / g_Rows};
-	const float cellSize {maxCellWidth < maxCellHeight ? maxCellWidth : maxCellHeight};
-	const float gridWidth {cellSize * g_Collumns + 2.f * padding + static_cast<float>(g_Collumns - 1) * margin};
-	const float gridHeight {cellSize * g_Rows + 2.f * padding + static_cast<float>(g_Rows - 1) * margin};
-
-	float horizontalOffset {0};
-	float verticalOffset {0};
-	if (g_WindowWidth > g_WindowHeight)
+	return Rectf
 	{
-		horizontalOffset = g_WindowWidth * 0.5f - gridWidth * 0.5f;
-	}
-	else
-	{
-		verticalOffset = g_WindowHeight * 0.5f - gridHeight * 0.5f;
-	}
+		g_GridTopLeft.x + g_Padding + static_cast<float>(column) * g_CellSize + static_cast<float>(column) * g_Margin,
+		g_GridTopLeft.y + g_Padding + static_cast<float>(row) * g_CellSize + static_cast<float>(row) * g_Margin,
+		g_CellSize,
+		g_CellSize
+	};
+}
 
+void DrawGrid()
+{
 	for (int i {0}; i < g_Rows; ++i)
 	{
 		for (int j {0}; j < g_Collumns; ++j)
 		{
-
-			const Point2f topLeft
-			{
-				horizontalOffset + padding + static_cast<float>(j) * cellSize + static_cast<float>(j) * margin,
-				verticalOffset + padding + static_cast<float>(i) * cellSize + static_cast<float>(i) * margin
-			};
-
-			FillRect(topLeft, cellSize, cellSize);
+			SetColor(0.2f, 0.2f, 0.2f);
+			FillRect(GetRectFromGridPosition(i, j));
 		}
 	}
 }
+
 #pragma endregion ownDefinitions
