@@ -18,26 +18,37 @@ enum class Cellstate
 	path,
 	occupied
 };
+enum class EnemyType
+{
+	goober
+};
 struct Cell
 {
 	Cellstate state;
 };
-struct gridIndex
+struct GridIndex
 {
 	int row;
 	int column;
 };
+struct Enemy
+{
+	EnemyType enemyType;
+	int pathIndex;
+};
 
-const int g_Rows {15};
-const int g_Collumns {25};
+const int g_Rows {10};
+const int g_Collumns {15};
 Cell g_Grid[g_Rows][g_Collumns] {};
-gridIndex g_Path[g_Collumns] {};
+GridIndex* g_PathIndeces {};
 
+const int g_NumberOfEnemies {5};
+Enemy g_Enemies[g_NumberOfEnemies] {};
 
 #pragma region scaleAndCenterGridConstants
 const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
 const float g_Padding {g_SmallestWindowLength * 0.025f}; //space between edge of screen and grid
-const float g_Margin {g_SmallestWindowLength * 0.0125f}; //space between grid elements
+const float g_Margin {0}; //space between grid elements
 const float g_MaxCellWidth {(g_WindowWidth - 2.f * g_Padding - static_cast<float>(g_Collumns - 1) * g_Margin) / g_Collumns};
 const float g_MaxCellHeight {(g_WindowHeight - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
 const float g_CellSize {g_MaxCellWidth < g_MaxCellHeight ? g_MaxCellWidth : g_MaxCellHeight};
@@ -51,14 +62,21 @@ const Point2f g_GridTopLeft
 };
 #pragma endregion scaleAndCenterGridConstants
 
+#pragma region Textures
 std::string g_EnemyPath {"Resources/Enemy_"};
 const int g_NumEnemyTypes {1};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
 
-void InitializeResources();
+Texture g_WaterTexture {};
+#pragma endregion Textures
 
+void InitializeResources();
+void InitializePath();
+
+Rectf GetRectFromGridPosition(GridIndex gridIndex);
+void DrawCell(int rowIndex, int columnIndex);
 void DrawGrid();
-Rectf GetRectFromGridPosition(int row, int column);
+void DrawEnemies();
 
 void FreeResources();
 #pragma endregion ownDeclarations
