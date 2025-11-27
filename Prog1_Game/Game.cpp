@@ -6,7 +6,20 @@
 #pragma region gameFunctions
 void Start()
 {
-	InitResources();
+	InitializeResources();
+
+	for (int i {0}; i < g_Rows; ++i)
+	{
+		for (int j {0}; j < g_Collumns; ++j)
+		{
+			g_Grid[i][j].state = i == 5 ? Cellstate::path : Cellstate::empty;
+
+			if (g_Grid[i][j].state == Cellstate::path)
+			{
+				g_Path[j] = gridIndex {i,j};
+			}
+		}
+	}
 }
 
 void Draw()
@@ -55,12 +68,12 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 #pragma endregion inputHandling
 
 #pragma region ownDefinitions
-void InitResources()
+void InitializeResources()
 {
-	for (int i = 0; i < g_NumEnemyTypes; ++i)
+	for (int i {0}; i < g_NumEnemyTypes; ++i)
 	{
-		g_EnemyPath += std::to_string(i) + ".png";
-		if (!TextureFromFile(g_EnemyPath, g_EnemySprites[i]))
+		std::string enemyPath {g_EnemyPath += std::to_string(i) + ".png"};
+		if (!TextureFromFile(enemyPath, g_EnemySprites[i]))
 		{
 			std::cout << "Error loading texture";
 		}
@@ -84,7 +97,7 @@ void DrawGrid()
 	{
 		for (int columnIndex {0}; columnIndex < g_Collumns; ++columnIndex)
 		{
-			SetColor(0.2f, 0.2f, 0.2f);
+			g_Grid[rowIndex][columnIndex].state == Cellstate::path ? SetColor(0.4f, 0.4f, 0.4f) : SetColor(0.2f, 0.2f, 0.2f);
 			FillRect(GetRectFromGridPosition(rowIndex, columnIndex));
 		}
 	}
@@ -92,7 +105,7 @@ void DrawGrid()
 
 void FreeResources()
 {
-	for (int i = 0; i < g_NumEnemyTypes; ++i)
+	for (int i {0}; i < g_NumEnemyTypes; ++i)
 	{
 		DeleteTexture(g_EnemySprites[i]);
 	}

@@ -22,10 +22,17 @@ struct Cell
 {
 	Cellstate state;
 };
+struct gridIndex
+{
+	int row;
+	int column;
+};
 
 const int g_Rows {15};
 const int g_Collumns {25};
 Cell g_Grid[g_Rows][g_Collumns] {};
+gridIndex g_Path[g_Collumns] {};
+
 
 #pragma region scaleAndCenterGridConstants
 const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
@@ -48,7 +55,7 @@ std::string g_EnemyPath {"Resources/Enemy_"};
 const int g_NumEnemyTypes {1};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
 
-void InitResources();
+void InitializeResources();
 
 void DrawGrid();
 Rectf GetRectFromGridPosition(int row, int column);
