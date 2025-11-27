@@ -6,7 +6,7 @@
 #pragma region gameFunctions
 void Start()
 {
-
+	InitResources();
 }
 
 void Draw()
@@ -23,7 +23,7 @@ void Update(float elapsedSec)
 
 void End()
 {
-	// free game resources here
+	FreeResources();
 }
 #pragma endregion gameFunctions
 
@@ -55,6 +55,18 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 #pragma endregion inputHandling
 
 #pragma region ownDefinitions
+void InitResources()
+{
+	for (int i = 0; i < g_NumEnemyTypes; ++i)
+	{
+		g_EnemyPath += std::to_string(i) + ".png";
+		if (!TextureFromFile(g_EnemyPath, g_EnemySprites[i]))
+		{
+			std::cout << "Error loading texture";
+		}
+	}
+}
+
 Rectf GetRectFromGridPosition(int row, int column)
 {
 	return Rectf
@@ -68,13 +80,21 @@ Rectf GetRectFromGridPosition(int row, int column)
 
 void DrawGrid()
 {
-	for (int i {0}; i < g_Rows; ++i)
+	for (int rowIndex {0}; rowIndex < g_Rows; ++rowIndex)
 	{
-		for (int j {0}; j < g_Collumns; ++j)
+		for (int columnIndex {0}; columnIndex < g_Collumns; ++columnIndex)
 		{
 			SetColor(0.2f, 0.2f, 0.2f);
-			FillRect(GetRectFromGridPosition(i, j));
+			FillRect(GetRectFromGridPosition(rowIndex, columnIndex));
 		}
+	}
+}
+
+void FreeResources()
+{
+	for (int i = 0; i < g_NumEnemyTypes; ++i)
+	{
+		DeleteTexture(g_EnemySprites[i]);
 	}
 }
 

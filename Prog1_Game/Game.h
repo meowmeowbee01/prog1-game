@@ -44,8 +44,16 @@ const Point2f g_GridTopLeft
 };
 #pragma endregion scaleAndCenterGridConstants
 
+std::string g_EnemyPath {"Resources/Enemy_"};
+const int g_NumEnemyTypes {1};
+Texture g_EnemySprites[g_NumEnemyTypes] {};
+
+void InitResources();
+
 void DrawGrid();
 Rectf GetRectFromGridPosition(int row, int column);
+
+void FreeResources();
 #pragma endregion ownDeclarations
 
 #pragma region gameFunctions
