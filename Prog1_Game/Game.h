@@ -40,6 +40,7 @@ struct Enemy
 const int g_Rows {10};
 const int g_Collumns {15};
 Cell g_Grid[g_Rows][g_Collumns] {};
+int g_PathLength {g_Collumns};
 GridIndex* g_PathIndeces {};
 
 const int g_NumberOfEnemies {5};
@@ -74,9 +75,11 @@ void InitializeResources();
 void InitializePath();
 
 Rectf GetRectFromGridPosition(GridIndex gridIndex);
-void DrawCell(int rowIndex, int columnIndex);
+void DrawCell(GridIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
+
+void AdvanceTurn();
 
 void FreeResources();
 #pragma endregion ownDeclarations

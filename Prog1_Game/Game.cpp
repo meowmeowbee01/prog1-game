@@ -36,7 +36,14 @@ void End()
 #pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key)
 {
-
+	switch (key)
+	{
+	case SDL_KeyCode::SDLK_SPACE:
+		AdvanceTurn();
+		break;
+	default:
+		break;
+	}
 }
 
 void OnKeyUpEvent(SDL_Keycode key)
@@ -81,8 +88,7 @@ void InitializeResources()
 
 void InitializePath()
 {
-	int numPathTiles {g_Collumns};
-	g_PathIndeces = new GridIndex[numPathTiles];
+	g_PathIndeces = new GridIndex[g_PathLength];
 
 	for (int i {0}; i < g_Rows; ++i)
 	{
@@ -109,15 +115,15 @@ Rectf GetRectFromGridPosition(GridIndex gridIndex)
 	};
 }
 
-void DrawCell(int rowIndex, int columnIndex)
+void DrawCell(GridIndex gridIndex)
 {
-	switch (g_Grid[rowIndex][columnIndex].state)
+	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
 	case Cellstate::empty:
-		DrawTexture(g_WaterTexture, GetRectFromGridPosition(GridIndex {rowIndex, columnIndex}));
+		DrawTexture(g_WaterTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	case Cellstate::path:
-		FillRect(GetRectFromGridPosition(GridIndex {rowIndex, columnIndex}));
+		FillRect(GetRectFromGridPosition(gridIndex));
 		break;
 	}
 }
@@ -129,7 +135,7 @@ void DrawGrid()
 	{
 		for (int columnIndex {0}; columnIndex < g_Collumns; ++columnIndex)
 		{
-			DrawCell(rowIndex, columnIndex);
+			DrawCell(GridIndex {rowIndex, columnIndex});
 		}
 	}
 }
@@ -144,6 +150,18 @@ void DrawEnemies()
 			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndeces[g_Enemies[i].pathIndex]));
 		default:
 			break;
+		}
+	}
+}
+
+void AdvanceTurn()
+{
+	for (int i {g_NumberOfEnemies - 1}; i >= 0; --i)
+	{
+		++g_Enemies[i].pathIndex;
+		if (g_Enemies[i].pathIndex >= g_PathLength)
+		{
+			//enemy cleared the path
 		}
 	}
 }
