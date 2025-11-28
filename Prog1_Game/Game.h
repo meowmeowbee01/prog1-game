@@ -97,7 +97,7 @@ void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 
 #pragma region Update
 
-
+void EnemyJump();
 #pragma endregion Update
 
 #pragma region End

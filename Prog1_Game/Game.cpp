@@ -23,7 +23,7 @@ void Draw()
 
 void Update(float elapsedSec)
 {
-
+	EnemyJump();
 }
 
 void End()
@@ -171,6 +171,19 @@ void UpdateMousePosition(const SDL_MouseMotionEvent& e)
 {
 	g_MousePosition.x = static_cast<float>(e.x);
 	g_MousePosition.y = static_cast<float>(e.y);
+}
+
+void EnemyJump()
+{
+	for (int i {0}; i < g_NumberOfEnemies; ++i)
+	{
+		for (int j {i + 1}; j < g_NumberOfEnemies; ++j)
+		{
+			if (g_Enemies[i].pathIndex != g_Enemies[j].pathIndex) continue;
+
+			g_Enemies[i].pathIndex += 1;
+		}
+	}
 }
 
 void FreeResources()
