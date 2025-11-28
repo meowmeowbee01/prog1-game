@@ -53,7 +53,7 @@ void OnKeyUpEvent(SDL_Keycode key)
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
 {
-
+	UpdateMousePosition(e);
 }
 
 void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
@@ -79,8 +79,8 @@ void InitializeResources()
 		}
 	}
 
-	std::string waterPath {"Resources/Water.jpg"};
-	if (!TextureFromFile(waterPath, g_WaterTexture))
+	std::string GrassPath {"Resources/Grass.jpg"};
+	if (!TextureFromFile(GrassPath, GrassTexture))
 	{
 		std::cout << "Error loading texture";
 	}
@@ -120,7 +120,7 @@ void DrawCell(GridIndex gridIndex)
 	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
 	case Cellstate::empty:
-		DrawTexture(g_WaterTexture, GetRectFromGridPosition(gridIndex));
+		DrawTexture(GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	case Cellstate::path:
 		FillRect(GetRectFromGridPosition(gridIndex));
@@ -161,9 +161,16 @@ void AdvanceTurn()
 		++g_Enemies[i].pathIndex;
 		if (g_Enemies[i].pathIndex >= g_PathLength)
 		{
-			//enemy cleared the path
+			//TODO: enemy cleared the path
+			std::cout << "enemy cleared the path!\n";
 		}
 	}
+}
+
+void UpdateMousePosition(const SDL_MouseMotionEvent& e)
+{
+	g_MousePosition.x = static_cast<float>(e.x);
+	g_MousePosition.y = static_cast<float>(e.y);
 }
 
 void FreeResources()
@@ -172,7 +179,8 @@ void FreeResources()
 	{
 		DeleteTexture(g_EnemySprites[i]);
 	}
-	DeleteTexture(g_WaterTexture);
+
+	DeleteTexture(GrassTexture);
 }
 
 #pragma endregion ownDefinitions

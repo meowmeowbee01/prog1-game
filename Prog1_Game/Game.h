@@ -12,6 +12,7 @@ float g_WindowHeight {700};
 
 
 #pragma region ownDeclarations
+
 enum class Cellstate
 {
 	empty,
@@ -68,20 +69,42 @@ std::string g_EnemyPath {"Resources/Enemy_"};
 const int g_NumEnemyTypes {1};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
 
-Texture g_WaterTexture {};
+Texture GrassTexture {};
 #pragma endregion Textures
+
+Point2f g_MousePosition {};
+
+#pragma region Functions
+#pragma region start
 
 void InitializeResources();
 void InitializePath();
+#pragma endregion start
+
+#pragma region Draw
 
 Rectf GetRectFromGridPosition(GridIndex gridIndex);
 void DrawCell(GridIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
+#pragma endregion Draw
+
+#pragma region Input
 
 void AdvanceTurn();
+void UpdateMousePosition(const SDL_MouseMotionEvent& e);
+#pragma endregion Input
+
+#pragma region Update
+
+
+#pragma endregion Update
+
+#pragma region End
 
 void FreeResources();
+#pragma endregion End
+#pragma endregion Functions
 #pragma endregion ownDeclarations
 
 #pragma region gameFunctions
