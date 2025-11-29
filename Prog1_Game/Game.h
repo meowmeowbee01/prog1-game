@@ -23,6 +23,12 @@ enum class EnemyType
 {
 	goober
 };
+enum class EnemyState
+{
+	alive,
+	dead,
+	reachedGoal
+};
 struct Cell
 {
 	Cellstate state;
@@ -36,12 +42,14 @@ struct Enemy
 {
 	EnemyType enemyType;
 	int pathIndex;
+	EnemyState state;
 };
 
 const int g_Rows {10};
-const int g_Collumns {15};
-Cell g_Grid[g_Rows][g_Collumns] {};
-int g_PathLength {g_Collumns};
+const int g_Columns {15};
+Cell g_Grid[g_Rows][g_Columns] {};
+int g_PathLength {21};
+int g_StartingRowIndex {3};
 GridIndex* g_PathIndeces {};
 
 const int g_NumberOfEnemies {5};
@@ -50,11 +58,11 @@ Enemy g_Enemies[g_NumberOfEnemies] {};
 #pragma region scaleAndCenterGridConstants
 const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
 const float g_Padding {g_SmallestWindowLength * 0.025f}; //space between edge of screen and grid
-const float g_Margin {0}; //space between grid elements
-const float g_MaxCellWidth {(g_WindowWidth - 2.f * g_Padding - static_cast<float>(g_Collumns - 1) * g_Margin) / g_Collumns};
+const float g_Margin {1.f}; //space between grid elements
+const float g_MaxCellWidth {(g_WindowWidth - 2.f * g_Padding - static_cast<float>(g_Columns - 1) * g_Margin) / g_Columns};
 const float g_MaxCellHeight {(g_WindowHeight - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
 const float g_CellSize {g_MaxCellWidth < g_MaxCellHeight ? g_MaxCellWidth : g_MaxCellHeight};
-const float g_GridWidth {g_CellSize * g_Collumns + 2.f * g_Padding + static_cast<float>(g_Collumns - 1) * g_Margin};
+const float g_GridWidth {g_CellSize * g_Columns + 2.f * g_Padding + static_cast<float>(g_Columns - 1) * g_Margin};
 const float g_GridHeight {g_CellSize * g_Rows + 2.f * g_Padding + static_cast<float>(g_Rows - 1) * g_Margin};
 const bool g_IsOffsetHorizontal {g_WindowWidth / g_GridWidth > g_WindowHeight / g_GridHeight};
 const Point2f g_GridTopLeft
@@ -69,10 +77,13 @@ std::string g_EnemyPath {"Resources/Enemy_"};
 const int g_NumEnemyTypes {1};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
 
-Texture GrassTexture {};
+Texture g_GrassTexture {};
+
+Texture g_HoveredTileTexture {};
 #pragma endregion Textures
 
 Point2f g_MousePosition {};
+
 
 #pragma region Functions
 #pragma region start
@@ -83,16 +94,19 @@ void InitializePath();
 
 #pragma region Draw
 
+
 Rectf GetRectFromGridPosition(GridIndex gridIndex);
 void DrawCell(GridIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
+void HighlightHoveredTile();
 #pragma endregion Draw
 
 #pragma region Input
 
 void AdvanceTurn();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
+GridIndex GetHoveredCell();
 #pragma endregion Input
 
 #pragma region Update
