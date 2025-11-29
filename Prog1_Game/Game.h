@@ -17,7 +17,7 @@ enum class Cellstate
 {
 	empty,
 	path,
-	occupied
+	tower
 };
 enum class EnemyType
 {
@@ -29,11 +29,16 @@ enum class EnemyState
 	dead,
 	reachedGoal
 };
+enum class TowerType
+{
+	gun,
+	bomb
+};
 struct Cell
 {
 	Cellstate state;
 };
-struct GridIndex
+struct TileIndex
 {
 	int row;
 	int column;
@@ -44,16 +49,24 @@ struct Enemy
 	int pathIndex;
 	EnemyState state;
 };
+struct Tower
+{
+	TowerType towerType;
+	TileIndex GridPosition;
+	TileIndex TargetTile;
+};
 
 const int g_Rows {10};
 const int g_Columns {15};
 Cell g_Grid[g_Rows][g_Columns] {};
 int g_PathLength {21};
 int g_StartingRowIndex {3};
-GridIndex* g_PathIndeces {};
+TileIndex* g_PathIndeces {};
 
 const int g_NumberOfEnemies {5};
 Enemy g_Enemies[g_NumberOfEnemies] {};
+
+
 
 #pragma region scaleAndCenterGridConstants
 const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
@@ -79,7 +92,13 @@ Texture g_EnemySprites[g_NumEnemyTypes] {};
 
 Texture g_GrassTexture {};
 
+Texture g_PathTexture {};
+
 Texture g_HoveredTileTexture {};
+
+std::string g_TowerPath {};
+const int g_TowerTypes {1};
+Color4f g_GunTowerPlaceHolder {0.7f, 0.2f, 0.1f, 1.f};
 #pragma endregion Textures
 
 Point2f g_MousePosition {};
@@ -95,8 +114,8 @@ void InitializePath();
 #pragma region Draw
 
 
-Rectf GetRectFromGridPosition(GridIndex gridIndex);
-void DrawCell(GridIndex gridIndex);
+Rectf GetRectFromGridPosition(TileIndex gridIndex);
+void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void HighlightHoveredTile();
@@ -106,7 +125,7 @@ void HighlightHoveredTile();
 
 void AdvanceTurn();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
-GridIndex GetHoveredCell();
+TileIndex GetHoveredCell();
 #pragma endregion Input
 
 #pragma region Update

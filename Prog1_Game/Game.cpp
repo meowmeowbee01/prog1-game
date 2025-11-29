@@ -75,28 +75,33 @@ void InitializeResources()
 {
 	for (int i {0}; i < g_NumEnemyTypes; ++i)
 	{
-		std::string enemyPath {g_EnemyPath += std::to_string(i) + ".png"};
+		const std::string enemyPath {g_EnemyPath += std::to_string(i) + ".png"};
 		if (!TextureFromFile(enemyPath, g_EnemySprites[i]))
 		{
-			std::cout << "Error loading texture";
+			std::cout << "Error loading enemy texture";
 		}
 	}
 
-	std::string GrassPath {"Resources/Grass.jpg"};
+	const std::string GrassPath {"Resources/Grass.jpg"};
 	if (!TextureFromFile(GrassPath, g_GrassTexture))
 	{
-		std::cout << "Error loading texture";
+		std::cout << "Error loading grass texture";
+	}
+
+	if (!TextureFromFile("Resources/Path.png", g_PathTexture))
+	{
+		std::cout << "Error loading path texture";
 	}
 
 	if (!TextureFromFile("Resources/Hovered_Tile.png", g_HoveredTileTexture))
 	{
-		std::cout << "Error loading texture";
+		std::cout << "Error loading marker texture";
 	}
 }
 
 void InitializePath()
 {
-	g_PathIndeces = new GridIndex[g_PathLength];
+	g_PathIndeces = new TileIndex[g_PathLength];
 
 	for (int rowIndex {0}; rowIndex < g_Rows; ++rowIndex)
 	{
@@ -106,12 +111,12 @@ void InitializePath()
 
 			if (g_Grid[rowIndex][columnIndex].state != Cellstate::path) continue;
 
-			g_PathIndeces[columnIndex] = GridIndex {rowIndex, columnIndex};
+			g_PathIndeces[columnIndex] = TileIndex {rowIndex, columnIndex};
 		}
 	}
 }
 
-Rectf GetRectFromGridPosition(GridIndex gridIndex)
+Rectf GetRectFromGridPosition(TileIndex gridIndex)
 {
 	return Rectf
 	{
@@ -122,7 +127,7 @@ Rectf GetRectFromGridPosition(GridIndex gridIndex)
 	};
 }
 
-void DrawCell(GridIndex gridIndex)
+void DrawCell(TileIndex gridIndex)
 {
 	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
@@ -130,19 +135,18 @@ void DrawCell(GridIndex gridIndex)
 		DrawTexture(g_GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	case Cellstate::path:
-		FillRect(GetRectFromGridPosition(gridIndex));
+		DrawTexture(g_PathTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	}
 }
 
 void DrawGrid()
 {
-	SetColor(0.2f, 0.2f, 0.2f);
 	for (int rowIndex {0}; rowIndex < g_Rows; ++rowIndex)
 	{
 		for (int columnIndex {0}; columnIndex < g_Columns; ++columnIndex)
 		{
-			DrawCell(GridIndex {rowIndex, columnIndex});
+			DrawCell(TileIndex {rowIndex, columnIndex});
 		}
 	}
 }
@@ -185,13 +189,13 @@ void UpdateMousePosition(const SDL_MouseMotionEvent& e)
 	g_MousePosition.y = static_cast<float>(e.y);
 }
 
-GridIndex GetHoveredCell()
+TileIndex GetHoveredCell()
 {
 	for (int i {0}; i < g_Rows; ++i)
 	{
 		for (int j = 0; j < g_Columns; ++j)
 		{
-			const GridIndex currentGridIndex {i, j};
+			const TileIndex currentGridIndex {i, j};
 			const Rectf currentCell {GetRectFromGridPosition(currentGridIndex)};
 
 			if (!IsPointInRect(g_MousePosition, currentCell)) continue;
@@ -199,6 +203,7 @@ GridIndex GetHoveredCell()
 			return currentGridIndex;
 		}
 	}
+	return TileIndex {-2, -2};
 }
 
 void EnemyJump()
