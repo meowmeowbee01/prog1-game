@@ -1,5 +1,6 @@
 #pragma once
 #include <utils.h>
+#include <vector>;
 using namespace utils;
 
 #pragma region gameInformation
@@ -66,6 +67,7 @@ TileIndex* g_PathIndeces {};
 const int g_NumberOfEnemies {5};
 Enemy g_Enemies[g_NumberOfEnemies] {};
 
+std::vector<Tower> g_Towers;
 
 
 #pragma region scaleAndCenterGridConstants
@@ -97,8 +99,9 @@ Texture g_PathTexture {};
 Texture g_HoveredTileTexture {};
 
 std::string g_TowerPath {};
-const int g_TowerTypes {1};
-Color4f g_GunTowerPlaceHolder {0.7f, 0.2f, 0.1f, 1.f};
+const int g_NumberOfTowerTypes {1};
+Texture g_TowerSprites[g_NumberOfTowerTypes] {};
+Color4f g_GunTowerPlaceHolder {1.0f, 0.2f, 0.1f, 1.f};
 #pragma endregion Textures
 
 Point2f g_MousePosition {};
@@ -109,6 +112,7 @@ Point2f g_MousePosition {};
 
 void InitializeResources();
 void InitializePath();
+void InitializeTowers();
 #pragma endregion start
 
 #pragma region Draw
@@ -118,12 +122,16 @@ Rectf GetRectFromGridPosition(TileIndex gridIndex);
 void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
+void DrawTowers();
 void HighlightHoveredTile();
+//TODO: Draw Towers
 #pragma endregion Draw
 
+bool IsCellFree(TileIndex tileIndex);
 #pragma region Input
 
 void AdvanceTurn();
+void PlaceTower();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 TileIndex GetHoveredCell();
 #pragma endregion Input

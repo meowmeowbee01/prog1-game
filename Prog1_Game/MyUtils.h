@@ -18,7 +18,7 @@ void PrintElements(const int array[], int arraySize);
 void PrintElements(const int array[], int startIdx, int endIdx);
 int GetGridIndex(int rowIdx, int colIdx, int nrCols);
 int GetRow(int index, int numCols);
-int GetCol(int index, int numRows);
+int GetCol(int index, int numCols);
 void VisualizeGridArray(int array[], int numCols, int numRows);
 void AssignRandomValues(int array[], int arraySize, int min, int max);
 int Count(int array[], int arraySize, int compare);

@@ -8,9 +8,11 @@ void Start()
 {
 	InitializeResources();
 
-	//InitializePathTiles();
-
 	InitializePath();
+
+	InitializeTowers();
+
+	EnemyJump();
 }
 
 
@@ -22,11 +24,13 @@ void Draw()
 	HighlightHoveredTile();
 
 	DrawEnemies();
+
+	DrawTowers();
 }
 
 void Update(float elapsedSec)
 {
-	EnemyJump();
+	//EnemyJump();
 }
 
 void End()
@@ -66,7 +70,11 @@ void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
 
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
-
+	switch (e.button)
+	{
+	case 1:
+		PlaceTower();
+	}
 }
 #pragma endregion inputHandling
 
@@ -97,6 +105,7 @@ void InitializeResources()
 	{
 		std::cout << "Error loading marker texture";
 	}
+
 }
 
 void InitializePath()
@@ -114,6 +123,12 @@ void InitializePath()
 			g_PathIndeces[columnIndex] = TileIndex {rowIndex, columnIndex};
 		}
 	}
+}
+
+void InitializeTowers()
+{
+	const int maxTowers {g_NumberOfEnemies};
+	g_Towers.reserve(maxTowers);
 }
 
 Rectf GetRectFromGridPosition(TileIndex gridIndex)
@@ -166,9 +181,36 @@ void DrawEnemies()
 	}
 }
 
+void DrawTowers()
+{
+	for (size_t i {0}; i < g_Towers.size(); ++i)
+	{
+		for (int j {0}; j < g_Rows * g_Columns; ++j)
+		{
+			const TileIndex currentTile {GetRow(j, g_Columns), GetCol(j, g_Columns)};
+
+			if (g_Grid[currentTile.row][currentTile.column].state != Cellstate::tower) continue;
+
+			SetColor(g_GunTowerPlaceHolder);
+			FillRect(GetRectFromGridPosition(currentTile));
+			
+		}
+		DrawRect(GetRectFromGridPosition(g_Towers.at(i).TargetTile));
+	}
+}
+
 void HighlightHoveredTile()
 {
 	DrawTexture(g_HoveredTileTexture, GetRectFromGridPosition(GetHoveredCell()));
+}
+
+bool IsCellFree(TileIndex tileIndex)
+{
+	if (g_Grid[tileIndex.row][tileIndex.column].state == Cellstate::empty)
+	{
+		return true;
+	}
+	return false;
 }
 
 void AdvanceTurn()
@@ -181,6 +223,18 @@ void AdvanceTurn()
 			g_Enemies[enemyIndex].state = EnemyState::reachedGoal;
 		}
 	}
+	EnemyJump();
+}
+
+void PlaceTower()
+{
+	const TileIndex hoveredCell {GetHoveredCell()};
+	if (!IsCellFree(hoveredCell)) return;
+
+	g_Grid[hoveredCell.row][hoveredCell.column].state = Cellstate::tower;
+	g_Towers.push_back(Tower {TowerType::gun, hoveredCell, g_PathIndeces[0]});
+
+	//TODO: Remove some kind of ressource (Action Point)
 }
 
 void UpdateMousePosition(const SDL_MouseMotionEvent& e)
@@ -227,6 +281,8 @@ void FreeResources()
 	}
 
 	DeleteTexture(g_GrassTexture);
+	DeleteTexture(g_PathTexture);
+	DeleteTexture(g_HoveredTileTexture);
 }
 
 #pragma endregion ownDefinitions
