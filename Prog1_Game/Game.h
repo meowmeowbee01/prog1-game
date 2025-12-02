@@ -98,8 +98,8 @@ Texture g_PathTexture {};
 
 Texture g_HoveredTileTexture {};
 
-std::string g_TowerPath {};
-const int g_NumberOfTowerTypes {1};
+std::string g_GunTowerPath {"Resources/Guntower_"};
+const int g_NumberOfTowerTypes {2};
 Texture g_TowerSprites[g_NumberOfTowerTypes] {};
 Color4f g_GunTowerPlaceHolder {1.0f, 0.2f, 0.1f, 1.f};
 #pragma endregion Textures

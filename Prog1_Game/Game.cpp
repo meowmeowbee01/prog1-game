@@ -83,7 +83,7 @@ void InitializeResources()
 {
 	for (int i {0}; i < g_NumEnemyTypes; ++i)
 	{
-		const std::string enemyPath {g_EnemyPath += std::to_string(i) + ".png"};
+		const std::string enemyPath {g_EnemyPath + std::to_string(i) + ".png"};
 		if (!TextureFromFile(enemyPath, g_EnemySprites[i]))
 		{
 			std::cout << "Error loading enemy texture";
@@ -105,7 +105,11 @@ void InitializeResources()
 	{
 		std::cout << "Error loading marker texture";
 	}
-
+	for (int i {0}; i < g_NumberOfTowerTypes; ++i)
+	{
+		const std::string gunTowerPath {g_GunTowerPath + std::to_string(i) + ".png"};
+		TextureFromFile(gunTowerPath, g_TowerSprites[i]);
+	}
 }
 
 void InitializePath()
@@ -194,10 +198,8 @@ void DrawTowers()
 			const TileIndex currentTile {GetRow(j, g_Columns), GetCol(j, g_Columns)};
 
 			if (g_Grid[currentTile.row][currentTile.column].state != Cellstate::tower) continue;
-
-			SetColor(g_GunTowerPlaceHolder);
-			FillRect(GetRectFromGridPosition(currentTile));
-
+			
+			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(currentTile));
 		}
 		DrawRect(GetRectFromGridPosition(g_Towers.at(i).TargetTile));
 	}
@@ -242,7 +244,7 @@ void AdvanceTurn()
 
 void PlaceTower()
 {
-	if (UpdateHoveredTile()) return;
+	if (!UpdateHoveredTile()) return;
 	if (!IsCellFree(g_HoveredTile)) return;
 
 	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = Cellstate::tower;
