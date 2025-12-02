@@ -64,8 +64,7 @@ int g_PathLength {21};
 int g_StartingRowIndex {3};
 TileIndex* g_PathIndeces {};
 
-const int g_NumberOfEnemies {5};
-Enemy g_Enemies[g_NumberOfEnemies] {};
+std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
 

@@ -127,7 +127,7 @@ void InitializePath()
 
 void InitializeTowers()
 {
-	const int maxTowers {g_NumberOfEnemies};
+	const int maxTowers {10};
 	g_Towers.reserve(maxTowers);
 }
 
@@ -168,7 +168,7 @@ void DrawGrid()
 
 void DrawEnemies()
 {
-	for (int enemyIndex {0}; enemyIndex < g_NumberOfEnemies; ++enemyIndex)
+	for (int enemyIndex {0}; enemyIndex < g_Enemies.size(); ++enemyIndex)
 	{
 		if (g_Enemies[enemyIndex].state != EnemyState::alive) continue;
 		switch (g_Enemies[enemyIndex].enemyType)
@@ -193,7 +193,7 @@ void DrawTowers()
 
 			SetColor(g_GunTowerPlaceHolder);
 			FillRect(GetRectFromGridPosition(currentTile));
-			
+
 		}
 		DrawRect(GetRectFromGridPosition(g_Towers.at(i).TargetTile));
 	}
@@ -215,14 +215,20 @@ bool IsCellFree(TileIndex tileIndex)
 
 void AdvanceTurn()
 {
-	for (int enemyIndex {g_NumberOfEnemies - 1}; enemyIndex >= 0; --enemyIndex)
+	for (Enemy& enemy : g_Enemies)
 	{
-		++g_Enemies[enemyIndex].pathIndex;
-		if (g_Enemies[enemyIndex].pathIndex >= g_PathLength)
+		++enemy.pathIndex;
+		if (enemy.pathIndex >= g_PathLength)
 		{
-			g_Enemies[enemyIndex].state = EnemyState::reachedGoal;
+			enemy.state = EnemyState::reachedGoal;
 		}
 	}
+
+	if (RandomIntInRange(0, 1) == 0)
+	{
+		g_Enemies.push_back(Enemy {});
+	}
+
 	EnemyJump();
 }
 
@@ -262,13 +268,18 @@ TileIndex GetHoveredCell()
 
 void EnemyJump()
 {
-	for (int currentEnemyIndex {0}; currentEnemyIndex < g_NumberOfEnemies; ++currentEnemyIndex)
+	for (int i {0}; i < g_Enemies.size(); ++i) //keep looping untill enemies can not be on the same spot
 	{
-		for (int j {currentEnemyIndex + 1}; j < g_NumberOfEnemies; ++j)
+		for (Enemy& enemy : g_Enemies) //for every enemy
 		{
-			if (g_Enemies[currentEnemyIndex].pathIndex != g_Enemies[j].pathIndex) continue;
-
-			g_Enemies[currentEnemyIndex].pathIndex += 1;
+			for (Enemy& otherEnemy : g_Enemies) //compare with every other enemy
+			{
+				if (&enemy == &otherEnemy) continue; //not itself
+				if (enemy.pathIndex == otherEnemy.pathIndex)
+				{
+					enemy.pathIndex++;
+				}
+			}
 		}
 	}
 }
