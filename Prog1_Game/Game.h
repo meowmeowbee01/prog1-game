@@ -57,8 +57,8 @@ struct Tower
 	TileIndex TargetTile;
 };
 
-const int g_Rows {10};
-const int g_Columns {15};
+const int g_Rows {11};
+const int g_Columns {20};
 Cell g_Grid[g_Rows][g_Columns] {};
 int g_PathLength {21};
 int g_StartingRowIndex {3};
@@ -70,19 +70,20 @@ std::vector<Tower> g_Towers;
 
 
 #pragma region scaleAndCenterGridConstants
-const float g_SmallestWindowLength {g_WindowWidth < g_WindowHeight ? g_WindowWidth : g_WindowHeight};
-const float g_Padding {g_SmallestWindowLength * 0.025f}; //space between edge of screen and grid
+const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f};
+const float g_SmallestGridLength {g_GridArea.width < g_GridArea.height ? g_GridArea.width : g_GridArea.height};
+const float g_Padding {g_SmallestGridLength * 0.025f}; //space between edge of screen and grid
 const float g_Margin {1.f}; //space between grid elements
-const float g_MaxCellWidth {(g_WindowWidth - 2.f * g_Padding - static_cast<float>(g_Columns - 1) * g_Margin) / g_Columns};
-const float g_MaxCellHeight {(g_WindowHeight - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
+const float g_MaxCellWidth {(g_GridArea.width - 2.f * g_Padding - static_cast<float>(g_Columns - 1) * g_Margin) / g_Columns};
+const float g_MaxCellHeight {(g_GridArea.height - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
 const float g_CellSize {g_MaxCellWidth < g_MaxCellHeight ? g_MaxCellWidth : g_MaxCellHeight};
 const float g_GridWidth {g_CellSize * g_Columns + 2.f * g_Padding + static_cast<float>(g_Columns - 1) * g_Margin};
 const float g_GridHeight {g_CellSize * g_Rows + 2.f * g_Padding + static_cast<float>(g_Rows - 1) * g_Margin};
-const bool g_IsOffsetHorizontal {g_WindowWidth / g_GridWidth > g_WindowHeight / g_GridHeight};
+const bool g_IsOffsetHorizontal {g_GridArea.width / g_GridWidth > g_GridArea.height / g_GridHeight};
 const Point2f g_GridTopLeft
 {
-	g_IsOffsetHorizontal ? g_WindowWidth * 0.5f - g_GridWidth * 0.5f : 0.f,
-	g_IsOffsetHorizontal ? 0.f : g_WindowHeight * 0.5f - g_GridHeight * 0.5f
+	g_GridArea.left + (g_IsOffsetHorizontal ? g_GridArea.width * 0.5f - g_GridWidth * 0.5f : 0.f),
+	g_GridArea.top + (g_IsOffsetHorizontal ? 0.f : g_GridArea.height * 0.5f - g_GridHeight * 0.5f)
 };
 #pragma endregion scaleAndCenterGridConstants
 
@@ -105,6 +106,7 @@ Color4f g_GunTowerPlaceHolder {1.0f, 0.2f, 0.1f, 1.f};
 
 Point2f g_MousePosition {};
 
+TileIndex g_HoveredTile {};
 
 #pragma region Functions
 #pragma region start
@@ -132,12 +134,13 @@ bool IsCellFree(TileIndex tileIndex);
 void AdvanceTurn();
 void PlaceTower();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
-TileIndex GetHoveredCell();
+bool UpdateHoveredTile();
 #pragma endregion Input
 
 #pragma region Update
 
-void EnemyJump();
+void JumpOverlappingEnemies();
+void JumpIfOverlapping(Enemy& enemy);
 #pragma endregion Update
 
 #pragma region End

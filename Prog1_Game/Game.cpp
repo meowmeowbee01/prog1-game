@@ -12,7 +12,7 @@ void Start()
 
 	InitializeTowers();
 
-	EnemyJump();
+	JumpOverlappingEnemies();
 }
 
 
@@ -30,7 +30,7 @@ void Draw()
 
 void Update(float elapsedSec)
 {
-	//EnemyJump();
+
 }
 
 void End()
@@ -146,12 +146,16 @@ void DrawCell(TileIndex gridIndex)
 {
 	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
+	case Cellstate::tower:
 	case Cellstate::empty:
 		DrawTexture(g_GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	case Cellstate::path:
 		DrawTexture(g_PathTexture, GetRectFromGridPosition(gridIndex));
 		break;
+	default:
+		SetColor(1.f, 0.f, 0.f);
+		FillRect(GetRectFromGridPosition(gridIndex));
 	}
 }
 
@@ -201,7 +205,11 @@ void DrawTowers()
 
 void HighlightHoveredTile()
 {
-	DrawTexture(g_HoveredTileTexture, GetRectFromGridPosition(GetHoveredCell()));
+	if (UpdateHoveredTile())
+	{
+		DrawTexture(g_HoveredTileTexture, GetRectFromGridPosition(g_HoveredTile));
+	}
+
 }
 
 bool IsCellFree(TileIndex tileIndex)
@@ -229,16 +237,16 @@ void AdvanceTurn()
 		g_Enemies.push_back(Enemy {});
 	}
 
-	EnemyJump();
+	JumpOverlappingEnemies();
 }
 
 void PlaceTower()
 {
-	const TileIndex hoveredCell {GetHoveredCell()};
-	if (!IsCellFree(hoveredCell)) return;
+	if (UpdateHoveredTile()) return;
+	if (!IsCellFree(g_HoveredTile)) return;
 
-	g_Grid[hoveredCell.row][hoveredCell.column].state = Cellstate::tower;
-	g_Towers.push_back(Tower {TowerType::gun, hoveredCell, g_PathIndeces[0]});
+	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = Cellstate::tower;
+	g_Towers.push_back(Tower {TowerType::gun, g_HoveredTile, g_PathIndeces[0]});
 
 	//TODO: Remove some kind of ressource (Action Point)
 }
@@ -249,37 +257,43 @@ void UpdateMousePosition(const SDL_MouseMotionEvent& e)
 	g_MousePosition.y = static_cast<float>(e.y);
 }
 
-TileIndex GetHoveredCell()
+bool UpdateHoveredTile()
 {
 	for (int i {0}; i < g_Rows; ++i)
 	{
 		for (int j = 0; j < g_Columns; ++j)
 		{
-			const TileIndex currentGridIndex {i, j};
-			const Rectf currentCell {GetRectFromGridPosition(currentGridIndex)};
+			const TileIndex currentTileIndex {i, j};
+			const Rectf currentTile {GetRectFromGridPosition(currentTileIndex)};
 
-			if (!IsPointInRect(g_MousePosition, currentCell)) continue;
-
-			return currentGridIndex;
+			if (!IsPointInRect(g_MousePosition, currentTile)) continue;
+			g_HoveredTile = currentTileIndex;
+			return true;
 		}
 	}
-	return TileIndex {-2, -2};
+	return false;
 }
 
-void EnemyJump()
+void JumpOverlappingEnemies()
 {
-	for (int i {0}; i < g_Enemies.size(); ++i) //keep looping untill enemies can not be on the same spot
+	const size_t otherEnemies {g_Enemies.size()};
+	for (int i {0}; i < otherEnemies; ++i) //keep looping untill enemies can not be on the same spot
 	{
 		for (Enemy& enemy : g_Enemies) //for every enemy
 		{
-			for (Enemy& otherEnemy : g_Enemies) //compare with every other enemy
-			{
-				if (&enemy == &otherEnemy) continue; //not itself
-				if (enemy.pathIndex == otherEnemy.pathIndex)
-				{
-					enemy.pathIndex++;
-				}
-			}
+			JumpIfOverlapping(enemy);
+		}
+	}
+}
+
+void JumpIfOverlapping(Enemy& enemy)
+{
+	for (const Enemy& otherEnemy : g_Enemies) //compare with every other enemy
+	{
+		if (&enemy == &otherEnemy) continue; //not itself
+		if (enemy.pathIndex == otherEnemy.pathIndex)
+		{
+			enemy.pathIndex++;
 		}
 	}
 }
