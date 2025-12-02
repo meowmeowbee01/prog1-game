@@ -1,6 +1,7 @@
 #pragma once
 #include <utils.h>
 #include <vector>;
+
 using namespace utils;
 
 #pragma region gameInformation
@@ -14,7 +15,7 @@ float g_WindowHeight {700};
 
 #pragma region ownDeclarations
 
-enum class Cellstate
+enum class TileState
 {
 	empty,
 	path,
@@ -35,9 +36,9 @@ enum class TowerType
 	gun,
 	bomb
 };
-struct Cell
+struct Tile
 {
-	Cellstate state;
+	TileState state;
 };
 struct TileIndex
 {
@@ -55,12 +56,13 @@ struct Tower
 	TowerType towerType;
 	TileIndex GridPosition;
 	TileIndex TargetTile;
+	bool isSelected;
 };
 
 const int g_Rows {11};
 const int g_Columns {20};
-Cell g_Grid[g_Rows][g_Columns] {};
-int g_PathLength {21};
+Tile g_Grid[g_Rows][g_Columns] {};
+int g_PathLength {g_Columns};
 int g_StartingRowIndex {3};
 TileIndex* g_PathIndeces {};
 
@@ -109,6 +111,8 @@ Point2f g_MousePosition {};
 TileIndex g_HoveredTile {};
 
 #pragma region Functions
+
+bool IsOnSameTile(TileIndex a, TileIndex b);
 #pragma region start
 
 void InitializeResources();
@@ -118,23 +122,25 @@ void InitializeTowers();
 
 #pragma region Draw
 
-
 Rectf GetRectFromGridPosition(TileIndex gridIndex);
 void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void DrawTowers();
+void HighlightTargetTile(size_t towerIndex);
 void HighlightHoveredTile();
-//TODO: Draw Towers
 #pragma endregion Draw
 
 bool IsCellFree(TileIndex tileIndex);
 #pragma region Input
 
 void AdvanceTurn();
-void PlaceTower();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
+void PlaceTower();
+void SelectTower();
+void DeselectOtherTowers(size_t selectedTowerIndex);
+void SelectNewTargetTile(size_t towerIndex);
 #pragma endregion Input
 
 #pragma region Update

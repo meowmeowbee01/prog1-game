@@ -74,11 +74,25 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 	{
 	case 1:
 		PlaceTower();
+		break;
+	case 3:
+		SelectTower();
+		break;
 	}
 }
 #pragma endregion inputHandling
 
 #pragma region ownDefinitions
+
+bool IsOnSameTile(TileIndex a, TileIndex b)
+{
+	if (a.row == b.row && a.column == b.column)
+	{
+		return true;
+	}
+	return false;
+}
+
 void InitializeResources()
 {
 	for (int i {0}; i < g_NumEnemyTypes; ++i)
@@ -120,9 +134,9 @@ void InitializePath()
 	{
 		for (int columnIndex {0}; columnIndex < g_Columns; ++columnIndex)
 		{
-			g_Grid[rowIndex][columnIndex].state = rowIndex == 5 ? Cellstate::path : Cellstate::empty;
+			g_Grid[rowIndex][columnIndex].state = rowIndex == 5 ? TileState::path : TileState::empty;
 
-			if (g_Grid[rowIndex][columnIndex].state != Cellstate::path) continue;
+			if (g_Grid[rowIndex][columnIndex].state != TileState::path) continue;
 
 			g_PathIndeces[columnIndex] = TileIndex {rowIndex, columnIndex};
 		}
@@ -150,11 +164,11 @@ void DrawCell(TileIndex gridIndex)
 {
 	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
-	case Cellstate::tower:
-	case Cellstate::empty:
+	case TileState::tower:
+	case TileState::empty:
 		DrawTexture(g_GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
-	case Cellstate::path:
+	case TileState::path:
 		DrawTexture(g_PathTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	default:
@@ -191,18 +205,31 @@ void DrawEnemies()
 
 void DrawTowers()
 {
-	for (size_t i {0}; i < g_Towers.size(); ++i)
+	for (size_t towerIndex {0}; towerIndex < g_Towers.size(); ++towerIndex)
 	{
-		for (int j {0}; j < g_Rows * g_Columns; ++j)
+		for (int tileIndex {0}; tileIndex < g_Rows * g_Columns; ++tileIndex)
 		{
-			const TileIndex currentTile {GetRow(j, g_Columns), GetCol(j, g_Columns)};
+			const TileIndex currentTile {GetRow(tileIndex, g_Columns), GetCol(tileIndex, g_Columns)};
 
-			if (g_Grid[currentTile.row][currentTile.column].state != Cellstate::tower) continue;
+			if (g_Grid[currentTile.row][currentTile.column].state != TileState::tower) continue;
 			
 			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(currentTile));
 		}
-		DrawRect(GetRectFromGridPosition(g_Towers.at(i).TargetTile));
+
+		if (g_Towers.at(towerIndex).isSelected)
+		{
+			HighlightTargetTile(towerIndex);
+			
+			SetColor(1.f, 0.f, 0.f);
+			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).GridPosition));
+		}
 	}
+}
+
+void HighlightTargetTile(size_t towerIndex)
+{
+	SetColor(1.f, 0.f, 0.f);
+	DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).TargetTile));
 }
 
 void HighlightHoveredTile()
@@ -211,12 +238,11 @@ void HighlightHoveredTile()
 	{
 		DrawTexture(g_HoveredTileTexture, GetRectFromGridPosition(g_HoveredTile));
 	}
-
 }
 
 bool IsCellFree(TileIndex tileIndex)
 {
-	if (g_Grid[tileIndex.row][tileIndex.column].state == Cellstate::empty)
+	if (g_Grid[tileIndex.row][tileIndex.column].state == TileState::empty)
 	{
 		return true;
 	}
@@ -238,19 +264,7 @@ void AdvanceTurn()
 	{
 		g_Enemies.push_back(Enemy {});
 	}
-
 	JumpOverlappingEnemies();
-}
-
-void PlaceTower()
-{
-	if (!UpdateHoveredTile()) return;
-	if (!IsCellFree(g_HoveredTile)) return;
-
-	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = Cellstate::tower;
-	g_Towers.push_back(Tower {TowerType::gun, g_HoveredTile, g_PathIndeces[0]});
-
-	//TODO: Remove some kind of ressource (Action Point)
 }
 
 void UpdateMousePosition(const SDL_MouseMotionEvent& e)
@@ -276,10 +290,58 @@ bool UpdateHoveredTile()
 	return false;
 }
 
+void PlaceTower()
+{
+	if (!UpdateHoveredTile()) return;
+	if (!IsCellFree(g_HoveredTile)) return;
+
+	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
+	const bool notSelected {false};
+	g_Towers.push_back(Tower {TowerType::gun, g_HoveredTile, g_PathIndeces[0], notSelected});
+
+	//TODO: Remove some kind of ressource (Action Point)
+}
+
+void SelectTower()
+{
+	for (size_t i {0}; i < g_Towers.size(); ++i)
+	{
+		if (IsOnSameTile(g_HoveredTile, g_Towers.at(i).GridPosition))
+		{
+			g_Towers.at(i).isSelected = true;
+			DeselectOtherTowers(i);
+		}
+		else
+		{
+			SelectNewTargetTile(i);
+		}
+	}
+}
+
+void DeselectOtherTowers(size_t selectedTowerIndex)
+{
+	for (size_t i {0}; i < g_Towers.size(); ++i)
+	{
+		if (i == selectedTowerIndex) continue;
+		g_Towers.at(i).isSelected = false;
+	}
+}
+
+void SelectNewTargetTile(size_t towerIndex)
+{
+	for (int i {0}; i < g_PathLength; ++i)
+	{
+		if (!IsOnSameTile(g_HoveredTile, g_PathIndeces[i])) continue;
+		if (g_Towers.at(towerIndex).isSelected == false) continue;
+
+		g_Towers.at(towerIndex).TargetTile = g_HoveredTile;
+	}
+}
+
 void JumpOverlappingEnemies()
 {
 	const size_t otherEnemies {g_Enemies.size()};
-	for (int i {0}; i < otherEnemies; ++i) //keep looping untill enemies can not be on the same spot
+	for (int i {0}; i < otherEnemies; ++i) //keep looping until enemies can not be on the same spot
 	{
 		for (Enemy& enemy : g_Enemies) //for every enemy
 		{
@@ -295,7 +357,7 @@ void JumpIfOverlapping(Enemy& enemy)
 		if (&enemy == &otherEnemy) continue; //not itself
 		if (enemy.pathIndex == otherEnemy.pathIndex)
 		{
-			enemy.pathIndex++;
+			++enemy.pathIndex;
 		}
 	}
 }
@@ -310,6 +372,11 @@ void FreeResources()
 	DeleteTexture(g_GrassTexture);
 	DeleteTexture(g_PathTexture);
 	DeleteTexture(g_HoveredTileTexture);
+
+	for (int i {0}; i < g_NumberOfTowerTypes; ++i)
+	{
+		DeleteTexture(g_TowerSprites[i]);
+	}
 }
 
 #pragma endregion ownDefinitions
