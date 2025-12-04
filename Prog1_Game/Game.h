@@ -63,6 +63,7 @@ struct Enemy
 	EnemyType enemyType;
 	int pathIndex;
 	EnemyState state;
+	int health;
 };
 struct Tower
 {
@@ -71,7 +72,7 @@ struct Tower
 	TileIndex targetTile;
 	bool isSelected;
 };
-#pragma endregion enumsAndStructs
+#pragma endregion
 
 const int g_Rows {10};
 const int g_Columns {20};
@@ -100,9 +101,9 @@ const Point2f g_GridTopLeft
 	g_GridArea.left + (g_IsOffsetHorizontal ? g_GridArea.width * 0.5f - g_GridWidth * 0.5f : 0.f),
 	g_GridArea.top + (g_IsOffsetHorizontal ? 0.f : g_GridArea.height * 0.5f - g_GridHeight * 0.5f)
 };
-#pragma endregion scaleAndCenterGridConstants
+#pragma endregion
 
-#pragma region Textures
+#pragma region textures
 std::string g_EnemyPath {"Resources/Enemy_"};
 const int g_NumEnemyTypes {2};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
@@ -120,13 +121,13 @@ std::string g_GunTowerPath {"Resources/LightningTower_"};
 const int g_NumberOfTowerTypes {2};
 Texture g_TowerSprites[g_NumberOfTowerTypes] {};
 Texture g_CrosshairSprite {};
-#pragma endregion Textures
+#pragma endregion
 
 Point2f g_MousePosition {};
 
 TileIndex g_HoveredTile {};
 
-#pragma region Functions
+#pragma region functions
 
 #pragma region utils
 
@@ -143,7 +144,7 @@ void InitializePath();
 void InitializeTowers();
 #pragma endregion
 
-#pragma region Draw
+#pragma region draw
 
 void DrawCell(TileIndex gridIndex);
 void DrawGrid();
@@ -156,37 +157,39 @@ void HighlightHoveredTile();
 #pragma region gameLogic
 
 void AdvanceTurn();
+void SpawnEnemies();
+void AdvanceEnemies();
 void PlaceTower();
 void JumpOverlappingEnemies();
 void JumpIfOverlapping(Enemy& enemy);
 #pragma endregion
 
-#pragma region Update
+#pragma region update
 
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
 #pragma endregion
 
-#pragma region End
+#pragma region end
 
 void FreeResources();
 #pragma endregion
 
-#pragma region Input
+#pragma region input
 
 void SelectTower();
 void DeselectOtherTowers(size_t selectedTowerIndex);
 void SelectNewTargetTile(size_t towerIndex);
 #pragma endregion
-#pragma endregion Functions
-#pragma endregion ownDeclarations
+#pragma endregion
+#pragma endregion
 
 #pragma region gameFunctions
 void Start();
 void Draw();
 void Update(float elapsedSec);
 void End();
-#pragma endregion gameFunctions
+#pragma endregion
 
 #pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key);
@@ -194,4 +197,4 @@ void OnKeyUpEvent(SDL_Keycode key);
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e);
 void OnMouseDownEvent(const SDL_MouseButtonEvent& e);
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e);
-#pragma endregion inputHandling
+#pragma endregion

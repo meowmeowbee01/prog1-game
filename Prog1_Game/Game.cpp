@@ -37,7 +37,7 @@ void End()
 {
 	FreeResources();
 }
-#pragma endregion gameFunctions
+#pragma endregion
 
 #pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key)
@@ -75,7 +75,7 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 		SelectTower();
 	}
 }
-#pragma endregion inputHandling
+#pragma endregion
 
 #pragma region ownDefinitions
 
@@ -367,6 +367,39 @@ void HighlightHoveredTile()
 
 void AdvanceTurn()
 {
+	AdvanceEnemies();
+	SpawnEnemies();
+	JumpOverlappingEnemies();
+	for (const Tower& tower : g_Towers)
+	{
+		for (Enemy& enemy : g_Enemies)
+		{
+			if (!IsOnSameTile(g_PathIndeces[enemy.pathIndex], tower.targetTile)) continue;
+			--enemy.health;
+			if (enemy.health <= 0)
+			{
+				enemy.state = EnemyState::dead;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < g_Enemies.size(); i++)
+	{
+		switch (g_Enemies.at(i).state)
+		{
+		case EnemyState::dead:
+		case EnemyState::reachedGoal:
+			//delete the enemy from g_Enemies
+			break;
+		case EnemyState::alive:
+		default:
+			break;
+		}
+	}
+}
+
+void AdvanceEnemies()
+{
 	for (Enemy& enemy : g_Enemies)
 	{
 		++enemy.pathIndex;
@@ -375,12 +408,17 @@ void AdvanceTurn()
 			enemy.state = EnemyState::reachedGoal;
 		}
 	}
+}
 
-	if (RandomIntInRange(0, 1) == 0)
+void SpawnEnemies()
+{
+	const float spawnChance {0.25f};
+	const int health {4};
+	if (RandomDecimal() < spawnChance)
 	{
-		g_Enemies.push_back(Enemy {});
+		Enemy newEnemy {EnemyType::goober, 0, EnemyState::alive, health};
+		g_Enemies.push_back(newEnemy);
 	}
-	JumpOverlappingEnemies();
 }
 
 void PlaceTower()
@@ -501,4 +539,4 @@ void SelectNewTargetTile(size_t towerIndex)
 	g_Towers.at(towerIndex).targetTile = g_HoveredTile;
 }
 #pragma endregion
-#pragma endregion ownDefinitions
+#pragma endregion
