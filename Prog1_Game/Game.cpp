@@ -140,9 +140,10 @@ void InitializeResources()
 		std::cout << "Error loading grass texture";
 	}
 
-	if (!TextureFromFile("Resources/Path.png", g_PathTexture))
+	for (int i {0}; i < g_NumberOfPathTextures; ++i)
 	{
-		std::cout << "Error loading path texture";
+		const std::string pathPath {g_PathPath + std::to_string(i) + ".png"};
+		TextureFromFile(pathPath, g_PathTextures[i]);
 	}
 
 	if (!TextureFromFile("Resources/Hovered_Tile.png", g_HoveredTileTexture))
@@ -255,6 +256,16 @@ void InitializeTowers()
 
 void DrawCell(TileIndex gridIndex)
 {
+	enum class PathTextureIndeces
+	{
+		horizontal,
+		vertical,
+		topLeft,
+		topRight,
+		bottomLeft,
+		bottomRight
+	};
+
 	switch (g_Grid[gridIndex.row][gridIndex.column].state)
 	{
 	case TileState::tower:
@@ -262,12 +273,22 @@ void DrawCell(TileIndex gridIndex)
 		DrawTexture(g_GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	case TileState::pathHorizontal:
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::horizontal)], GetRectFromGridPosition(gridIndex));
+		break;
 	case TileState::pathVertical:
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::vertical)], GetRectFromGridPosition(gridIndex));
+		break;
 	case TileState::pathTopLeft:
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::topLeft)], GetRectFromGridPosition(gridIndex));
+		break;
 	case TileState::pathTopRight:
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::topRight)], GetRectFromGridPosition(gridIndex));
+		break;
 	case TileState::pathBottomleft:
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::bottomLeft)], GetRectFromGridPosition(gridIndex));
+		break;
 	case TileState::pathBottomRight:
-		DrawTexture(g_PathTexture, GetRectFromGridPosition(gridIndex));
+		DrawTexture(g_PathTextures[static_cast<int>(PathTextureIndeces::bottomRight)], GetRectFromGridPosition(gridIndex));
 		break;
 	default:
 		SetColor(1.f, 0.f, 0.f);

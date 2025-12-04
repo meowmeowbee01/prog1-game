@@ -110,6 +110,9 @@ Texture g_EnemySprites[g_NumEnemyTypes] {};
 Texture g_GrassTexture {};
 
 Texture g_PathTexture {};
+const int g_NumberOfPathTextures {6};
+std::string g_PathPath {"Resources/Path_"};
+Texture g_PathTextures[g_NumberOfPathTextures] {};
 
 Texture g_HoveredTileTexture {};
 
