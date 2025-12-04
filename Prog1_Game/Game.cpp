@@ -148,11 +148,50 @@ void InitializeResources()
 
 void InitializePath()
 {
-	for (int columnIndex {0}; columnIndex < g_Columns; ++columnIndex)
+	enum class Direction
 	{
-		g_Grid[5][columnIndex].state = TileState::path;
+		forward = 0,
+		up = 1,
+		down = 2
+	};
 
-		g_PathIndeces.push_back(TileIndex {5, columnIndex});
+	int column {0};
+	int row {g_Rows / 2};
+	Direction direction {};
+
+	while (column < g_Columns)
+	{
+		g_PathIndeces.push_back(TileIndex {row, column});
+		g_Grid[row][column].state = TileState::path;
+
+		int newDirection {};
+		const bool isTopRow {row == 0};
+		const bool isBottomRow {row == g_Rows - 1};
+		const bool isGoingDown {direction == Direction::down};
+		const bool isGoingUp {direction == Direction::up};
+
+		if (isTopRow && isGoingUp) newDirection = 0;
+		else if (isBottomRow && isGoingDown) newDirection = 0;
+		else if (isTopRow || isGoingDown) newDirection = RandomIntInRange(0, 1) * 2;
+		else if (isBottomRow || isGoingUp) newDirection = RandomIntInRange(0, 1);
+		else newDirection = RandomIntInRange(0, 2);
+
+		direction = static_cast<Direction>(newDirection);
+
+		switch (direction)
+		{
+		case Direction::forward:
+			++column;
+			break;
+		case Direction::up:
+			--row;
+			break;
+		case Direction::down:
+			++row;
+			break;
+		default:
+			break;
+		}
 	}
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <utils.h>
-#include <vector>;
+#include <vector>
 
 using namespace utils;
 
@@ -67,7 +67,7 @@ struct Tower
 };
 #pragma endregion enumsAndStructs
 
-const int g_Rows {11};
+const int g_Rows {5};
 const int g_Columns {20};
 Tile g_Grid[g_Rows][g_Columns] {};
 int g_StartingRowIndex {3};
