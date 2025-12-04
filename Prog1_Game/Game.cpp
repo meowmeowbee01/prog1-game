@@ -80,6 +80,17 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 #pragma region ownDefinitions
 
 #pragma region utils
+
+bool IsPath(TileState tileState)
+{
+	return tileState == TileState::pathHorizontal
+		|| tileState == TileState::pathVertical
+		|| tileState == TileState::pathTopLeft
+		|| tileState == TileState::pathTopRight
+		|| tileState == TileState::pathBottomleft
+		|| tileState == TileState::pathBottomRight;
+}
+
 bool IsOnSameTile(TileIndex a, TileIndex b)
 {
 	if (a.row == b.row && a.column == b.column)
@@ -161,22 +172,60 @@ void InitializePath()
 
 	while (column < g_Columns)
 	{
-		g_PathIndeces.push_back(TileIndex {row, column});
-		g_Grid[row][column].state = TileState::path;
 
-		int newDirection {};
+		Direction newDirection {};
 		const bool isTopRow {row == 0};
 		const bool isBottomRow {row == g_Rows - 1};
 		const bool isGoingDown {direction == Direction::down};
 		const bool isGoingUp {direction == Direction::up};
 
-		if (isTopRow && isGoingUp) newDirection = 0;
-		else if (isBottomRow && isGoingDown) newDirection = 0;
-		else if (isTopRow || isGoingDown) newDirection = RandomIntInRange(0, 1) * 2;
-		else if (isBottomRow || isGoingUp) newDirection = RandomIntInRange(0, 1);
-		else newDirection = RandomIntInRange(0, 2);
+		if (isTopRow && isGoingUp) newDirection = static_cast<Direction>(0);
+		else if (isBottomRow && isGoingDown) newDirection = static_cast<Direction>(0);
+		else if (isTopRow || isGoingDown) newDirection = static_cast<Direction>(RandomIntInRange(0, 1) * 2);
+		else if (isBottomRow || isGoingUp) newDirection = static_cast<Direction>(RandomIntInRange(0, 1));
+		else newDirection = static_cast<Direction>(RandomIntInRange(0, 2));
 
-		direction = static_cast<Direction>(newDirection);
+		g_PathIndeces.push_back(TileIndex {row, column});
+
+		if (direction == Direction::forward)
+		{
+			if (newDirection == Direction::forward)
+			{
+				g_Grid[row][column].state = TileState::pathHorizontal;
+			}
+			else if (newDirection == Direction::up)
+			{
+				g_Grid[row][column].state = TileState::pathTopLeft;
+			}
+			else //down
+			{
+				g_Grid[row][column].state = TileState::pathBottomleft;
+			}
+		}
+		else if (direction == Direction::up)
+		{
+			if (newDirection == Direction::forward)
+			{
+				g_Grid[row][column].state = TileState::pathBottomRight;
+			}
+			else //up
+			{
+				g_Grid[row][column].state = TileState::pathVertical;
+			}
+		}
+		else //down
+		{
+			if (newDirection == Direction::forward)
+			{
+				g_Grid[row][column].state = TileState::pathTopRight;
+			}
+			else //down
+			{
+				g_Grid[row][column].state = TileState::pathVertical;
+			}
+		}
+
+		direction = newDirection;
 
 		switch (direction)
 		{
@@ -212,7 +261,12 @@ void DrawCell(TileIndex gridIndex)
 	case TileState::empty:
 		DrawTexture(g_GrassTexture, GetRectFromGridPosition(gridIndex));
 		break;
-	case TileState::path:
+	case TileState::pathHorizontal:
+	case TileState::pathVertical:
+	case TileState::pathTopLeft:
+	case TileState::pathTopRight:
+	case TileState::pathBottomleft:
+	case TileState::pathBottomRight:
 		DrawTexture(g_PathTexture, GetRectFromGridPosition(gridIndex));
 		break;
 	default:
@@ -420,7 +474,7 @@ void DeselectOtherTowers(size_t selectedTowerIndex)
 
 void SelectNewTargetTile(size_t towerIndex)
 {
-	if (g_Grid[g_HoveredTile.row][g_HoveredTile.column].state != TileState::path) return;
+	if (!IsPath(g_Grid[g_HoveredTile.row][g_HoveredTile.column].state)) return;
 	if (g_Towers.at(towerIndex).isSelected == false) return;
 
 	g_Towers.at(towerIndex).targetTile = g_HoveredTile;

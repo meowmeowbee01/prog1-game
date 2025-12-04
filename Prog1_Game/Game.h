@@ -25,8 +25,13 @@ enum class MouseButtons
 enum class TileState
 {
 	empty,
-	path,
-	tower
+	tower,
+	pathHorizontal,
+	pathVertical,
+	pathTopLeft,
+	pathTopRight,
+	pathBottomleft,
+	pathBottomRight
 };
 enum class EnemyType
 {
@@ -122,6 +127,7 @@ TileIndex g_HoveredTile {};
 
 #pragma region utils
 
+bool IsPath(TileState tileState);
 bool IsOnSameTile(TileIndex a, TileIndex b);
 Rectf GetRectFromGridPosition(TileIndex gridIndex);
 bool IsCellFree(TileIndex tileIndex);
