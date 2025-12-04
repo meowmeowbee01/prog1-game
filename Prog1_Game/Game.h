@@ -70,9 +70,8 @@ struct Tower
 const int g_Rows {11};
 const int g_Columns {20};
 Tile g_Grid[g_Rows][g_Columns] {};
-int g_PathLength {g_Columns};
 int g_StartingRowIndex {3};
-TileIndex* g_PathIndeces {};
+std::vector<TileIndex> g_PathIndeces {};
 
 std::vector<Enemy> g_Enemies;
 
@@ -120,47 +119,55 @@ TileIndex g_HoveredTile {};
 
 #pragma region Functions
 
+#pragma region utils
+
 bool IsOnSameTile(TileIndex a, TileIndex b);
+Rectf GetRectFromGridPosition(TileIndex gridIndex);
+bool IsCellFree(TileIndex tileIndex);
+#pragma endregion
+
 #pragma region start
 
 void InitializeResources();
 void InitializePath();
 void InitializeTowers();
-#pragma endregion start
+#pragma endregion
 
 #pragma region Draw
 
-Rectf GetRectFromGridPosition(TileIndex gridIndex);
 void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void DrawTowers();
 void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
-#pragma endregion Draw
+#pragma endregion
 
-bool IsCellFree(TileIndex tileIndex);
-#pragma region Input
+#pragma region gameLogic
 
 void AdvanceTurn();
-void UpdateMousePosition(const SDL_MouseMotionEvent& e);
-bool UpdateHoveredTile();
 void PlaceTower();
-void SelectTower();
-void DeselectOtherTowers(size_t selectedTowerIndex);
-void SelectNewTargetTile(size_t towerIndex);
-#pragma endregion Input
+void JumpOverlappingEnemies();
+void JumpIfOverlapping(Enemy& enemy);
+#pragma endregion
 
 #pragma region Update
 
-void JumpOverlappingEnemies();
-void JumpIfOverlapping(Enemy& enemy);
-#pragma endregion Update
+void UpdateMousePosition(const SDL_MouseMotionEvent& e);
+bool UpdateHoveredTile();
+#pragma endregion
 
 #pragma region End
 
 void FreeResources();
-#pragma endregion End
+#pragma endregion
+
+#pragma region Input
+
+void SelectTower();
+void DeselectOtherTowers(size_t selectedTowerIndex);
+void SelectNewTargetTile(size_t towerIndex);
+#pragma endregion
 #pragma endregion Functions
 #pragma endregion ownDeclarations
 
