@@ -241,6 +241,10 @@ void DrawEnemies()
 		{
 		case EnemyType::goober:
 			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndeces.at(g_Enemies[enemyIndex].pathIndex)));
+			break;
+		case EnemyType::angryGoober:
+			DrawTexture(g_EnemySprites[1], GetRectFromGridPosition(g_PathIndeces.at(g_Enemies[enemyIndex].pathIndex)));
+			break;
 		default:
 			break;
 		}

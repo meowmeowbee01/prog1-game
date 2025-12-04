@@ -30,7 +30,8 @@ enum class TileState
 };
 enum class EnemyType
 {
-	goober
+	goober,
+	angryGoober
 };
 enum class EnemyState
 {
@@ -67,7 +68,7 @@ struct Tower
 };
 #pragma endregion enumsAndStructs
 
-const int g_Rows {5};
+const int g_Rows {10};
 const int g_Columns {20};
 Tile g_Grid[g_Rows][g_Columns] {};
 int g_StartingRowIndex {3};
@@ -98,7 +99,7 @@ const Point2f g_GridTopLeft
 
 #pragma region Textures
 std::string g_EnemyPath {"Resources/Enemy_"};
-const int g_NumEnemyTypes {1};
+const int g_NumEnemyTypes {2};
 Texture g_EnemySprites[g_NumEnemyTypes] {};
 
 Texture g_GrassTexture {};
