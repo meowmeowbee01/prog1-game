@@ -41,7 +41,7 @@ enum class EnemyState
 };
 enum class TowerType
 {
-	gun,
+	lightning,
 	bomb
 };
 struct Tile
@@ -108,7 +108,7 @@ Texture g_PathTexture {};
 
 Texture g_HoveredTileTexture {};
 
-std::string g_GunTowerPath {"Resources/Guntower_"};
+std::string g_GunTowerPath {"Resources/LightningTower_"};
 const int g_NumberOfTowerTypes {2};
 Texture g_TowerSprites[g_NumberOfTowerTypes] {};
 Texture g_CrosshairSprite {};

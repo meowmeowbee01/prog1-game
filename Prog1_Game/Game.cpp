@@ -315,7 +315,7 @@ void PlaceTower()
 
 	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
 	const bool notSelected {false};
-	g_Towers.push_back(Tower {TowerType::gun, g_HoveredTile, g_PathIndeces.at(0), notSelected});
+	g_Towers.push_back(Tower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), notSelected});
 
 	//TODO: Remove some kind of ressource (Action Point)
 }
