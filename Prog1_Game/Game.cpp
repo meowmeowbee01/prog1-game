@@ -72,10 +72,10 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
 	switch (e.button)
 	{
-	case 1:
+	case static_cast<int>(MouseButtons::leftClick):
 		PlaceTower();
 		break;
-	case 3:
+	case static_cast<int>(MouseButtons::rightClick):
 		SelectTower();
 		break;
 	}
@@ -124,6 +124,7 @@ void InitializeResources()
 		const std::string gunTowerPath {g_GunTowerPath + std::to_string(i) + ".png"};
 		TextureFromFile(gunTowerPath, g_TowerSprites[i]);
 	}
+	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
 }
 
 void InitializePath()
@@ -215,21 +216,20 @@ void DrawTowers()
 			
 			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(currentTile));
 		}
-
+		
 		if (g_Towers.at(towerIndex).isSelected)
 		{
-			HighlightTargetTile(towerIndex);
+			HighlightTargetTile(g_Towers.at(towerIndex).targetTile);
 			
 			SetColor(1.f, 0.f, 0.f);
-			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).GridPosition));
+			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
 		}
 	}
 }
 
-void HighlightTargetTile(size_t towerIndex)
+void HighlightTargetTile(TileIndex targetTile)
 {
-	SetColor(1.f, 0.f, 0.f);
-	DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).TargetTile));
+	DrawTexture(g_CrosshairSprite, GetRectFromGridPosition(targetTile));
 }
 
 void HighlightHoveredTile()
@@ -306,7 +306,7 @@ void SelectTower()
 {
 	for (size_t i {0}; i < g_Towers.size(); ++i)
 	{
-		if (IsOnSameTile(g_HoveredTile, g_Towers.at(i).GridPosition))
+		if (IsOnSameTile(g_HoveredTile, g_Towers.at(i).gridPosition))
 		{
 			g_Towers.at(i).isSelected = true;
 			DeselectOtherTowers(i);
@@ -334,7 +334,7 @@ void SelectNewTargetTile(size_t towerIndex)
 		if (!IsOnSameTile(g_HoveredTile, g_PathIndeces[i])) continue;
 		if (g_Towers.at(towerIndex).isSelected == false) continue;
 
-		g_Towers.at(towerIndex).TargetTile = g_HoveredTile;
+		g_Towers.at(towerIndex).targetTile = g_HoveredTile;
 	}
 }
 

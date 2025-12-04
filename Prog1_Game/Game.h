@@ -14,7 +14,14 @@ float g_WindowHeight {700};
 
 
 #pragma region ownDeclarations
-
+#pragma region enumsAndStructs
+enum class MouseButtons
+{
+	idle,
+	leftClick,
+	middleClick,
+	rightClick
+};
 enum class TileState
 {
 	empty,
@@ -54,10 +61,11 @@ struct Enemy
 struct Tower
 {
 	TowerType towerType;
-	TileIndex GridPosition;
-	TileIndex TargetTile;
+	TileIndex gridPosition;
+	TileIndex targetTile;
 	bool isSelected;
 };
+#pragma endregion enumsAndStructs
 
 const int g_Rows {11};
 const int g_Columns {20};
@@ -103,7 +111,7 @@ Texture g_HoveredTileTexture {};
 std::string g_GunTowerPath {"Resources/Guntower_"};
 const int g_NumberOfTowerTypes {2};
 Texture g_TowerSprites[g_NumberOfTowerTypes] {};
-Color4f g_GunTowerPlaceHolder {1.0f, 0.2f, 0.1f, 1.f};
+Texture g_CrosshairSprite {};
 #pragma endregion Textures
 
 Point2f g_MousePosition {};
@@ -127,7 +135,7 @@ void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void DrawTowers();
-void HighlightTargetTile(size_t towerIndex);
+void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
 #pragma endregion Draw
 
