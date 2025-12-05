@@ -47,7 +47,7 @@ enum class EnemyState
 enum class TowerType
 {
 	lightning,
-	bomb
+	fire
 };
 struct Tile
 {
@@ -141,7 +141,6 @@ bool IsCellFree(TileIndex tileIndex);
 
 void InitializeResources();
 void InitializePath();
-void InitializeTowers();
 #pragma endregion
 
 #pragma region draw
@@ -162,6 +161,7 @@ void AdvanceEnemies();
 void PlaceTower();
 void JumpOverlappingEnemies();
 void JumpIfOverlapping(Enemy& enemy);
+void DeleteEnemiesFromArray();
 #pragma endregion
 
 #pragma region update

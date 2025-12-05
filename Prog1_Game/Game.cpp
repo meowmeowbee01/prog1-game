@@ -10,8 +10,6 @@ void Start()
 
 	InitializePath();
 
-	InitializeTowers();
-
 	JumpOverlappingEnemies();
 }
 
@@ -244,12 +242,6 @@ void InitializePath()
 		}
 	}
 }
-
-void InitializeTowers()
-{
-	const int maxTowers {10};
-	g_Towers.reserve(maxTowers);
-}
 #pragma endregion
 
 #pragma region draw
@@ -370,30 +362,19 @@ void AdvanceTurn()
 	AdvanceEnemies();
 	SpawnEnemies();
 	JumpOverlappingEnemies();
-	for (const Tower& tower : g_Towers)
+
+	DeleteEnemiesFromArray();
+
+	for (Tower& tower : g_Towers)
 	{
 		for (Enemy& enemy : g_Enemies)
 		{
-			if (!IsOnSameTile(g_PathIndeces[enemy.pathIndex], tower.targetTile)) continue;
+			if (!IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), tower.targetTile)) continue;
 			--enemy.health;
 			if (enemy.health <= 0)
 			{
 				enemy.state = EnemyState::dead;
 			}
-		}
-	}
-
-	for (size_t i = 0; i < g_Enemies.size(); i++)
-	{
-		switch (g_Enemies.at(i).state)
-		{
-		case EnemyState::dead:
-		case EnemyState::reachedGoal:
-			//delete the enemy from g_Enemies
-			break;
-		case EnemyState::alive:
-		default:
-			break;
 		}
 	}
 }
@@ -454,6 +435,22 @@ void JumpIfOverlapping(Enemy& enemy)
 		{
 			++enemy.pathIndex;
 		}
+	}
+}
+
+void DeleteEnemiesFromArray()
+{
+	std::vector<int> indecesToDelete;
+	for (size_t i = 0; i < g_Enemies.size(); ++i)
+	{
+		if (g_Enemies.at(i).state == EnemyState::alive) continue;
+
+		indecesToDelete.push_back(i);
+	}
+
+	for (size_t i {0}; i < indecesToDelete.size(); ++i)
+	{
+		g_Enemies.erase(g_Enemies.begin() + indecesToDelete.at(i));
 	}
 }
 #pragma endregion
