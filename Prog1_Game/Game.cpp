@@ -359,6 +359,7 @@ void HighlightHoveredTile()
 
 void AdvanceTurn()
 {
+
 	AdvanceEnemies();
 	SpawnEnemies();
 	JumpOverlappingEnemies();
@@ -377,6 +378,7 @@ void AdvanceTurn()
 			}
 		}
 	}
+
 }
 
 void AdvanceEnemies()
@@ -441,9 +443,11 @@ void JumpIfOverlapping(Enemy& enemy)
 void DeleteEnemiesFromArray()
 {
 	std::vector<int> indecesToDelete;
+
+	//delete enemies that reached the goal
 	for (size_t i = 0; i < g_Enemies.size(); ++i)
 	{
-		if (g_Enemies.at(i).state == EnemyState::alive) continue;
+		if (g_Enemies.at(i).state != EnemyState::reachedGoal) continue;
 
 		indecesToDelete.push_back(i);
 	}
@@ -452,6 +456,21 @@ void DeleteEnemiesFromArray()
 	{
 		g_Enemies.erase(g_Enemies.begin() + indecesToDelete.at(i));
 	}
+
+	indecesToDelete.clear();
+	//delete enemies that died
+	for (size_t i = 0; i < g_Enemies.size(); ++i)
+	{
+		if (g_Enemies.at(i).state != EnemyState::dead) continue;
+
+		indecesToDelete.push_back(i);
+	}
+
+	for (const int& deleteIndex : indecesToDelete)
+	{
+		g_Enemies.erase(g_Enemies.begin() + deleteIndex);
+	}
+	//I am praying to god this doesn't cause any issues, but I tested everything that caused crashes before and it works.
 }
 #pragma endregion
 
