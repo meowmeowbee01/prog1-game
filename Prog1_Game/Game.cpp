@@ -154,11 +154,11 @@ bool SetDefaultTargetTile(Tower& tower)
 
 bool TileHasEnemy(int pathIndex)
 {
-	const TileIndex pathTile {g_PathIndeces.at(pathIndex)};
+	const TileIndex pathTile {g_PathIndices.at(pathIndex)};
 
 	for (const Enemy& enemy : g_Enemies)
 	{
-		if (IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), pathTile)) return true;
+		if (IsOnSameTile(g_PathIndices.at(enemy.pathIndex), pathTile)) return true;
 	}
 	return false;
 }
@@ -231,7 +231,7 @@ void InitializePath()
 		else if (isBottomRow || isGoingUp) newDirection = static_cast<Direction>(RandomIntInRange(0, 1));
 		else newDirection = static_cast<Direction>(RandomIntInRange(0, 2));
 
-		g_PathIndeces.push_back(TileIndex {row, column});
+		g_PathIndices.push_back(TileIndex {row, column});
 
 		if (direction == Direction::forward)
 		{
@@ -293,7 +293,7 @@ void InitializePath()
 
 #pragma region draw
 
-void DrawCell(TileIndex gridIndex)
+void DrawTile(TileIndex gridIndex)
 {
 	enum class PathTextureIndeces
 	{
@@ -341,7 +341,7 @@ void DrawGrid()
 	{
 		for (int columnIndex {0}; columnIndex < g_Columns; ++columnIndex)
 		{
-			DrawCell(TileIndex {rowIndex, columnIndex});
+			DrawTile(TileIndex {rowIndex, columnIndex});
 		}
 	}
 }
@@ -354,10 +354,10 @@ void DrawEnemies()
 		switch (g_Enemies[enemyIndex].enemyType)
 		{
 		case EnemyType::goober:
-			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndeces.at(g_Enemies[enemyIndex].pathIndex)));
+			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndices.at(g_Enemies[enemyIndex].pathIndex)));
 			break;
 		case EnemyType::angryGoober:
-			DrawTexture(g_EnemySprites[1], GetRectFromGridPosition(g_PathIndeces.at(g_Enemies[enemyIndex].pathIndex)));
+			DrawTexture(g_EnemySprites[1], GetRectFromGridPosition(g_PathIndices.at(g_Enemies[enemyIndex].pathIndex)));
 			break;
 		default:
 			break;
@@ -471,23 +471,42 @@ void AdvanceTurn()
 	
 	DeleteReachedGoalEnemies();
 	ApplyDamage();
+
+	++g_TurnCounter;
 }
 
 void AdvanceEnemies()
 {
 	for (Enemy& enemy : g_Enemies)
 	{
-		++enemy.pathIndex;
+		switch (enemy.enemyType)
+		{
+		case EnemyType::goober:
+			++enemy.pathIndex;
+			break;
+		case EnemyType::angryGoober:
+			enemy.pathIndex += 2;
+			break;
+		}
 	}
 }
 
 void SpawnEnemies()
 {
 	const float spawnChance {0.25f};
-	const int health {4};
+	const int gooberMaxHealth {4};
+	const int startPathIndex {0};
 	if (RandomDecimal() < spawnChance)
 	{
-		Enemy newEnemy {EnemyType::goober, 0, EnemyState::alive, health};
+		const float angryChance {0.33f};
+		if (RandomDecimal() < angryChance)
+		{
+			const int angryGooberMaxHealth {8};
+			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, EnemyState::alive, angryGooberMaxHealth};
+			g_Enemies.push_back(newEnemy);
+			return;
+		}
+		Enemy newEnemy {EnemyType::goober, startPathIndex, EnemyState::alive, gooberMaxHealth};
 		g_Enemies.push_back(newEnemy);
 	}
 }
@@ -508,7 +527,7 @@ void HandleReachedGoalEnemies()
 {
 	for (Enemy& enemy : g_Enemies)
 	{
-		if (enemy.pathIndex >= g_PathIndeces.size())
+		if (enemy.pathIndex >= g_PathIndices.size())
 		{
 			enemy.state = EnemyState::reachedGoal;
 			--g_PlayerHealth;
@@ -535,21 +554,13 @@ void JumpIfOverlapping(Enemy& enemy)
 
 void DeleteReachedGoalEnemies()
 {
-	std::vector<int> indecesToDelete;
-
-	//delete enemies that reached the goal
-	for (size_t i = 0; i < g_Enemies.size(); ++i)
-	{
-		if (g_Enemies.at(i).state != EnemyState::reachedGoal) continue;
-
-		indecesToDelete.push_back(i);
-	}
-
-	for (size_t i {0}; i < indecesToDelete.size(); ++i)
-	{
-		g_Enemies.erase(g_Enemies.begin() + indecesToDelete.at(i));
-	}
-	//I am praying to god this doesn't cause any issues, but I tested everything that caused crashes before and it works.
+	std::erase_if(
+		g_Enemies,
+		[](const Enemy& enemy) -> bool
+		{
+			return enemy.pathIndex >= g_PathIndices.size();
+		}
+	);
 }
 
 void ApplyDamage()
@@ -558,7 +569,7 @@ void ApplyDamage()
 	{
 		for (Enemy& enemy : g_Enemies)
 		{
-			if (!IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), tower.targetTile)) continue;
+			if (!IsOnSameTile(g_PathIndices.at(enemy.pathIndex), tower.targetTile)) continue;
 
 			switch (tower.towerType)
 			{
@@ -592,22 +603,15 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 	}
 }
 
-void DeleteEnemy(int enemyIndex)
-{
-	g_Enemies.erase(g_Enemies.begin() + enemyIndex);
-}
-
 void KillEnemies()
 {
-	for (size_t i = 0; i < g_Enemies.size(); ++i)
-	{
-		if (g_Enemies.at(i).health <= 0)
+	std::erase_if(
+		g_Enemies,
+		[](const Enemy& enemy) -> bool
 		{
-			g_Enemies.at(i).state = EnemyState::dead;
-			DeleteEnemy(i);
-			--i;
+			return enemy.health <= 0;
 		}
-	}
+	);
 }
 
 void PlaceTower()
@@ -625,7 +629,8 @@ void PlaceLightningTower()
 {
 	const bool selected {true};
 	const int lightningTowerRange {2};
-	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), true, lightningTowerRange};
+	const int level {1};
+	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), true, lightningTowerRange, level};
 	if (!SetDefaultTargetTile(defaultLightningTower))
 	{
 		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;

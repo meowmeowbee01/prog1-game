@@ -49,6 +49,11 @@ enum class TowerType
 	lightning,
 	fire
 };
+enum class EnemyAilment
+{
+	none,
+	burnt
+};
 struct Tile
 {
 	TileState state;
@@ -64,6 +69,7 @@ struct Enemy
 	int pathIndex;
 	EnemyState state;
 	int health;
+	EnemyAilment ailment;
 };
 struct Tower
 {
@@ -72,6 +78,7 @@ struct Tower
 	TileIndex targetTile;
 	bool isSelected;
 	int range;
+	int level;
 };
 #pragma endregion
 
@@ -79,13 +86,14 @@ const int g_Rows {10};
 const int g_Columns {20};
 Tile g_Grid[g_Rows][g_Columns] {};
 int g_StartingRowIndex {3};
-std::vector<TileIndex> g_PathIndeces {};
+std::vector<TileIndex> g_PathIndices {};
 
 std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
 const int g_LightningTowerRange {2};
 
+int g_TurnCounter {0};
 
 #pragma region scaleAndCenterGridConstants
 const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f};
@@ -151,7 +159,7 @@ void InitializePath();
 
 #pragma region draw
 
-void DrawCell(TileIndex gridIndex);
+void DrawTile(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void DrawTowers();
@@ -175,7 +183,6 @@ void DeleteReachedGoalEnemies();
 
 void ApplyDamage();
 void LightningChainDamage(Enemy& enemy, int towerLevel);
-void DeleteEnemy(int enemyIndex);
 void KillEnemies();
 
 void PlaceTower();
