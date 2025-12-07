@@ -84,6 +84,7 @@ std::vector<TileIndex> g_PathIndeces {};
 std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
+const int g_LightningTowerRange {2};
 
 
 #pragma region scaleAndCenterGridConstants
@@ -122,12 +123,13 @@ std::string g_GunTowerPath {"Resources/LightningTower_"};
 const int g_NumberOfTowerTypes {2};
 Texture g_TowerSprites[g_NumberOfTowerTypes] {};
 Texture g_CrosshairSprite {};
+Texture g_HeartSprite {};
 #pragma endregion
 
 Point2f g_MousePosition {};
-
 TileIndex g_HoveredTile {};
 
+int g_PlayerHealth {5};
 #pragma region functions
 
 #pragma region utils
@@ -153,24 +155,31 @@ void DrawCell(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
 void DrawTowers();
+void DrawRange(int towerIndex, int range);
 void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
+void DrawPlayerHealth();
 #pragma endregion
 
 #pragma region gameLogic
 
 void AdvanceTurn();
+
 void SpawnEnemies();
+
 void AdvanceEnemies();
-void PlaceTower();
-void PlaceLightningTower();
 void JumpOverlappingEnemies();
 void JumpIfOverlapping(Enemy& enemy);
-void DeleteEnemiesFromArray();
+void HandleReachedGoalEnemies();
+void DeleteReachedGoalEnemies();
+
 void ApplyDamage();
+void LightningChainDamage(Enemy& enemy, int towerLevel);
 void DeleteEnemy(int enemyIndex);
 void KillEnemies();
-void LightningChainDamage(Enemy& enemy, int towerLevel);
+
+void PlaceTower();
+void PlaceLightningTower();
 #pragma endregion
 
 #pragma region update

@@ -24,6 +24,8 @@ void Draw()
 	DrawEnemies();
 
 	DrawTowers();
+
+	DrawPlayerHealth();
 }
 
 void Update(float elapsedSec)
@@ -135,10 +137,10 @@ bool SetDefaultTargetTile(Tower& tower)
 
 	for (int rowIndex {startTile.row - range}; rowIndex <= startTile.row + range; ++rowIndex)
 	{
-		if (rowIndex > g_Rows - 1) continue;
+		if (rowIndex > g_Rows - 1 || rowIndex < 0) continue;
 		for (int columnIndex {startTile.column - range}; columnIndex <= startTile.column; ++columnIndex)
 		{
-			if (columnIndex > g_Columns - 1) continue;
+			if (columnIndex > g_Columns - 1 || columnIndex < 0) continue;
 
 			if (g_Grid[rowIndex][columnIndex].state == TileState::empty ||
 				g_Grid[rowIndex][columnIndex].state == TileState::tower) continue;
@@ -197,6 +199,8 @@ void InitializeResources()
 		TextureFromFile(gunTowerPath, g_TowerSprites[i]);
 	}
 	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
+
+	TextureFromFile("Resources/heart_red.png", g_HeartSprite);
 }
 
 void InitializePath()
@@ -380,8 +384,48 @@ void DrawTowers()
 
 			SetColor(1.f, 0.f, 0.f);
 			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+
+			int range {g_LightningTowerRange};
+			DrawRange(towerIndex, range);
 		}
 	}
+}
+
+void DrawRange(int towerIndex, int range)
+{
+	const TileIndex topLeftTile {g_Towers.at(towerIndex).gridPosition.row - range, g_Towers.at(towerIndex).gridPosition.column - range};
+	const TileIndex bottomRightTile {g_Towers.at(towerIndex).gridPosition.row + range, g_Towers.at(towerIndex).gridPosition.column + range};
+	const Rectf topLeftRange
+	{
+		GetRectFromGridPosition(topLeftTile)
+	};
+	const Rectf bottomRightRange
+	{
+		GetRectFromGridPosition(bottomRightTile)
+	};
+
+	Rectf rangeRect
+	{
+		topLeftRange.left,
+		topLeftRange.top,
+		bottomRightRange.left - topLeftRange.left + topLeftRange.width,
+		bottomRightRange.top + bottomRightRange.height - topLeftRange.top
+	};
+	Rectf gridTopLeft {GetRectFromGridPosition(TileIndex {0, 0})};
+	if (rangeRect.top < gridTopLeft.top)
+	{
+		const float difference = gridTopLeft.top - rangeRect.top;
+		rangeRect.top = gridTopLeft.top;
+		rangeRect.height -= difference;
+	}
+	if (rangeRect.left < gridTopLeft.left)
+	{
+		const float difference = gridTopLeft.left - rangeRect.left;
+		rangeRect.left = gridTopLeft.left;
+		rangeRect.width -= difference;
+	}
+
+	DrawRect(rangeRect);
 }
 
 void HighlightTargetTile(TileIndex targetTile)
@@ -396,6 +440,24 @@ void HighlightHoveredTile()
 		DrawTexture(g_HoveredTileTexture, GetRectFromGridPosition(g_HoveredTile));
 	}
 }
+
+void DrawPlayerHealth()
+{
+	const Rectf topLeft {GetRectFromGridPosition(TileIndex{0, 0})};
+
+	for (int i {0}; i < g_PlayerHealth; ++i)
+	{
+		const Rectf heartPos
+		{
+			topLeft.left + i * (g_CellSize + g_Padding),
+			topLeft.top - g_CellSize * 2,
+			topLeft.width,
+			topLeft.height
+		};
+
+		DrawTexture(g_HeartSprite, heartPos);
+	}
+}
 #pragma endregion
 
 #pragma region gameLogic
@@ -405,9 +467,10 @@ void AdvanceTurn()
 	AdvanceEnemies();
 	SpawnEnemies();
 	JumpOverlappingEnemies();
-
+	HandleReachedGoalEnemies();
+	
+	DeleteReachedGoalEnemies();
 	ApplyDamage();
-	DeleteEnemiesFromArray();
 }
 
 void AdvanceEnemies()
@@ -415,10 +478,6 @@ void AdvanceEnemies()
 	for (Enemy& enemy : g_Enemies)
 	{
 		++enemy.pathIndex;
-		if (enemy.pathIndex >= g_PathIndeces.size())
-		{
-			enemy.state = EnemyState::reachedGoal;
-		}
 	}
 }
 
@@ -433,29 +492,6 @@ void SpawnEnemies()
 	}
 }
 
-void PlaceTower()
-{
-	if (!UpdateHoveredTile()) return;
-	if (!IsTileFree(g_HoveredTile)) return;
-
-	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
-	PlaceLightningTower();
-
-	//TODO: Remove some kind of ressource (Action Point)
-}
-
-void PlaceLightningTower()
-{
-	const bool selected {true};
-	const int lightningTowerRange {3};
-	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), true, lightningTowerRange};
-	if (!SetDefaultTargetTile(defaultLightningTower))
-	{
-		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
-	}
-	g_Towers.push_back(defaultLightningTower);
-}
-
 void JumpOverlappingEnemies()
 {
 	const size_t otherEnemies {g_Enemies.size()};
@@ -464,6 +500,23 @@ void JumpOverlappingEnemies()
 		for (Enemy& enemy : g_Enemies) //for every enemy
 		{
 			JumpIfOverlapping(enemy);
+		}
+	}
+}
+
+void HandleReachedGoalEnemies()
+{
+	for (Enemy& enemy : g_Enemies)
+	{
+		if (enemy.pathIndex >= g_PathIndeces.size())
+		{
+			enemy.state = EnemyState::reachedGoal;
+			--g_PlayerHealth;
+			if (g_PlayerHealth == 0)
+			{
+				std::cout << "GAME OVER NOOB!";
+				//TODO: Add proper game over
+			}
 		}
 	}
 }
@@ -480,7 +533,7 @@ void JumpIfOverlapping(Enemy& enemy)
 	}
 }
 
-void DeleteEnemiesFromArray()
+void DeleteReachedGoalEnemies()
 {
 	std::vector<int> indecesToDelete;
 
@@ -518,24 +571,6 @@ void ApplyDamage()
 	KillEnemies();
 }
 
-void DeleteEnemy(int enemyIndex)
-{
-	g_Enemies.erase(g_Enemies.begin() + enemyIndex);
-}
-
-void KillEnemies()
-{
-	for (size_t i = 0; i < g_Enemies.size(); ++i)
-	{
-		if (g_Enemies.at(i).health <= 0)
-		{
-			g_Enemies.at(i).state = EnemyState::dead;
-			DeleteEnemy(i);
-			--i;
-		}
-	}
-}
-
 void LightningChainDamage(Enemy& enemy, int towerLevel)
 {
 	int pathIndex {enemy.pathIndex};
@@ -555,6 +590,47 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 		--pathIndex;
 		++currentChain;
 	}
+}
+
+void DeleteEnemy(int enemyIndex)
+{
+	g_Enemies.erase(g_Enemies.begin() + enemyIndex);
+}
+
+void KillEnemies()
+{
+	for (size_t i = 0; i < g_Enemies.size(); ++i)
+	{
+		if (g_Enemies.at(i).health <= 0)
+		{
+			g_Enemies.at(i).state = EnemyState::dead;
+			DeleteEnemy(i);
+			--i;
+		}
+	}
+}
+
+void PlaceTower()
+{
+	if (!UpdateHoveredTile()) return;
+	if (!IsTileFree(g_HoveredTile)) return;
+
+	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
+	PlaceLightningTower();
+
+	//TODO: Remove some kind of ressource (Action Point)
+}
+
+void PlaceLightningTower()
+{
+	const bool selected {true};
+	const int lightningTowerRange {2};
+	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), true, lightningTowerRange};
+	if (!SetDefaultTargetTile(defaultLightningTower))
+	{
+		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
+	}
+	g_Towers.push_back(defaultLightningTower);
 }
 #pragma endregion
 
