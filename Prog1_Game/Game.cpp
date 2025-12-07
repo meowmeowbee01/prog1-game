@@ -109,11 +109,54 @@ Rectf GetRectFromGridPosition(TileIndex gridIndex)
 	};
 }
 
-bool IsCellFree(TileIndex tileIndex)
+bool IsTileFree(TileIndex tileIndex)
 {
 	if (g_Grid[tileIndex.row][tileIndex.column].state == TileState::empty)
 	{
 		return true;
+	}
+	return false;
+}
+
+bool IsTargetTileInRange(const Tower& tower)
+{
+	if (abs(tower.gridPosition.row - g_HoveredTile.row) > tower.range || 
+		abs(tower.gridPosition.column - g_HoveredTile.column) > tower.range)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool SetDefaultTargetTile(Tower& tower)
+{
+	const TileIndex startTile {tower.gridPosition};
+	const int range {tower.range};
+
+	for (int rowIndex {startTile.row - range}; rowIndex <= startTile.row + range; ++rowIndex)
+	{
+		if (rowIndex > g_Rows - 1) continue;
+		for (int columnIndex {startTile.column - range}; columnIndex <= startTile.column; ++columnIndex)
+		{
+			if (columnIndex > g_Columns - 1) continue;
+
+			if (g_Grid[rowIndex][columnIndex].state == TileState::empty ||
+				g_Grid[rowIndex][columnIndex].state == TileState::tower) continue;
+
+			tower.targetTile = TileIndex {rowIndex, columnIndex};
+			return true;
+		}
+	}
+	return false;
+}
+
+bool TileHasEnemy(int pathIndex)
+{
+	const TileIndex pathTile {g_PathIndeces.at(pathIndex)};
+
+	for (const Enemy& enemy : g_Enemies)
+	{
+		if (IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), pathTile)) return true;
 	}
 	return false;
 }
@@ -359,26 +402,12 @@ void HighlightHoveredTile()
 
 void AdvanceTurn()
 {
-
 	AdvanceEnemies();
 	SpawnEnemies();
 	JumpOverlappingEnemies();
 
+	ApplyDamage();
 	DeleteEnemiesFromArray();
-
-	for (Tower& tower : g_Towers)
-	{
-		for (Enemy& enemy : g_Enemies)
-		{
-			if (!IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), tower.targetTile)) continue;
-			--enemy.health;
-			if (enemy.health <= 0)
-			{
-				enemy.state = EnemyState::dead;
-			}
-		}
-	}
-
 }
 
 void AdvanceEnemies()
@@ -407,13 +436,24 @@ void SpawnEnemies()
 void PlaceTower()
 {
 	if (!UpdateHoveredTile()) return;
-	if (!IsCellFree(g_HoveredTile)) return;
+	if (!IsTileFree(g_HoveredTile)) return;
 
 	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
-	const bool notSelected {false};
-	g_Towers.push_back(Tower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), notSelected});
+	PlaceLightningTower();
 
 	//TODO: Remove some kind of ressource (Action Point)
+}
+
+void PlaceLightningTower()
+{
+	const bool selected {true};
+	const int lightningTowerRange {3};
+	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndeces.at(0), true, lightningTowerRange};
+	if (!SetDefaultTargetTile(defaultLightningTower))
+	{
+		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
+	}
+	g_Towers.push_back(defaultLightningTower);
 }
 
 void JumpOverlappingEnemies()
@@ -456,21 +496,65 @@ void DeleteEnemiesFromArray()
 	{
 		g_Enemies.erase(g_Enemies.begin() + indecesToDelete.at(i));
 	}
+	//I am praying to god this doesn't cause any issues, but I tested everything that caused crashes before and it works.
+}
 
-	indecesToDelete.clear();
-	//delete enemies that died
+void ApplyDamage()
+{
+	for (Tower& tower : g_Towers)
+	{
+		for (Enemy& enemy : g_Enemies)
+		{
+			if (!IsOnSameTile(g_PathIndeces.at(enemy.pathIndex), tower.targetTile)) continue;
+
+			switch (tower.towerType)
+			{
+			case TowerType::lightning:
+				LightningChainDamage(enemy, 1);
+				break;
+			}
+		}
+	}
+	KillEnemies();
+}
+
+void DeleteEnemy(int enemyIndex)
+{
+	g_Enemies.erase(g_Enemies.begin() + enemyIndex);
+}
+
+void KillEnemies()
+{
 	for (size_t i = 0; i < g_Enemies.size(); ++i)
 	{
-		if (g_Enemies.at(i).state != EnemyState::dead) continue;
-
-		indecesToDelete.push_back(i);
+		if (g_Enemies.at(i).health <= 0)
+		{
+			g_Enemies.at(i).state = EnemyState::dead;
+			DeleteEnemy(i);
+			--i;
+		}
 	}
+}
 
-	for (const int& deleteIndex : indecesToDelete)
+void LightningChainDamage(Enemy& enemy, int towerLevel)
+{
+	int pathIndex {enemy.pathIndex};
+	const int maxChain {towerLevel * 3};
+	int currentChain {0};
+	int towerDamage {towerLevel};
+
+	enemy.health -= towerLevel;
+
+	while (TileHasEnemy(pathIndex) && currentChain < maxChain)
 	{
-		g_Enemies.erase(g_Enemies.begin() + deleteIndex);
+		for (Enemy& chainEnemy : g_Enemies) //find enemy behind hit enemy
+		{
+			if (chainEnemy.pathIndex != pathIndex - 1) continue;
+			--chainEnemy.health;
+		}
+		--pathIndex;
+		++currentChain;
 	}
-	//I am praying to god this doesn't cause any issues, but I tested everything that caused crashes before and it works.
 }
 #pragma endregion
 
@@ -551,6 +635,7 @@ void SelectNewTargetTile(size_t towerIndex)
 {
 	if (!IsPath(g_Grid[g_HoveredTile.row][g_HoveredTile.column].state)) return;
 	if (g_Towers.at(towerIndex).isSelected == false) return;
+	if (!IsTargetTileInRange(g_Towers.at(towerIndex))) return;
 
 	g_Towers.at(towerIndex).targetTile = g_HoveredTile;
 }

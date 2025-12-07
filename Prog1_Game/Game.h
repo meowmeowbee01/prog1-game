@@ -71,6 +71,7 @@ struct Tower
 	TileIndex gridPosition;
 	TileIndex targetTile;
 	bool isSelected;
+	int range;
 };
 #pragma endregion
 
@@ -134,7 +135,10 @@ TileIndex g_HoveredTile {};
 bool IsPath(TileState tileState);
 bool IsOnSameTile(TileIndex a, TileIndex b);
 Rectf GetRectFromGridPosition(TileIndex gridIndex);
-bool IsCellFree(TileIndex tileIndex);
+bool IsTileFree(TileIndex tileIndex);
+bool IsTargetTileInRange(const Tower& tower);
+bool SetDefaultTargetTile(Tower& tower);
+bool TileHasEnemy(int pathIndex);
 #pragma endregion
 
 #pragma region start
@@ -159,9 +163,14 @@ void AdvanceTurn();
 void SpawnEnemies();
 void AdvanceEnemies();
 void PlaceTower();
+void PlaceLightningTower();
 void JumpOverlappingEnemies();
 void JumpIfOverlapping(Enemy& enemy);
 void DeleteEnemiesFromArray();
+void ApplyDamage();
+void DeleteEnemy(int enemyIndex);
+void KillEnemies();
+void LightningChainDamage(Enemy& enemy, int towerLevel);
 #pragma endregion
 
 #pragma region update
