@@ -68,6 +68,7 @@ struct Enemy
 	EnemyType enemyType;
 	int pathIndex;
 	EnemyState state;
+	int maxHealth;
 	int health;
 	EnemyAilment ailment;
 };
@@ -91,6 +92,7 @@ std::vector<TileIndex> g_PathIndices {};
 std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
+const int g_MaxLevel {2};
 const int g_LightningTowerRange {2};
 
 int g_TurnCounter {0};
@@ -127,10 +129,12 @@ Texture g_PathTextures[g_NumberOfPathTextures] {};
 
 Texture g_HoveredTileTexture {};
 
-std::string g_GunTowerPath {"Resources/LightningTower_"};
-const int g_NumberOfTowerTypes {2};
-Texture g_TowerSprites[g_NumberOfTowerTypes] {};
+std::string g_LightningTowerPath {"Resources/LightningTower_"};
+const int g_NumberOfTowerTypes {1};
+Texture g_TowerSprites[g_MaxLevel] {};
+
 Texture g_CrosshairSprite {};
+
 Texture g_HeartSprite {};
 #pragma endregion
 
@@ -149,6 +153,7 @@ bool IsTileFree(TileIndex tileIndex);
 bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
+int GetSelectedTower();
 #pragma endregion
 
 #pragma region start
@@ -162,8 +167,9 @@ void InitializePath();
 void DrawTile(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
+void DrawEnemyHealth(Enemy enemy);
 void DrawTowers();
-void DrawRange(int towerIndex, int range);
+void DrawRange(size_t towerIndex, int range);
 void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
 void DrawPlayerHealth();
@@ -205,6 +211,7 @@ void FreeResources();
 void SelectTower();
 void DeselectOtherTowers(size_t selectedTowerIndex);
 void SelectNewTargetTile(size_t towerIndex);
+void UpgradeTower();
 #pragma endregion
 #pragma endregion
 #pragma endregion

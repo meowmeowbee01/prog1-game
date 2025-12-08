@@ -47,6 +47,9 @@ void OnKeyDownEvent(SDL_Keycode key)
 	case SDL_KeyCode::SDLK_SPACE:
 		AdvanceTurn();
 		break;
+	case SDL_KeyCode::SDLK_u:
+		UpgradeTower();
+		break;
 	default:
 		break;
 	}
@@ -73,6 +76,9 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 	{
 		PlaceTower();
 		SelectTower();
+	}
+	if (e.button == 3)
+	{
 	}
 }
 #pragma endregion
@@ -162,6 +168,15 @@ bool TileHasEnemy(int pathIndex)
 	}
 	return false;
 }
+
+int GetSelectedTower()
+{
+	for (size_t i = 0; i < g_Towers.size(); i++)
+	{
+		if (g_Towers.at(i).isSelected == false) continue;
+		return i;
+	}
+}
 #pragma endregion
 
 #pragma region start
@@ -195,8 +210,11 @@ void InitializeResources()
 	}
 	for (int i {0}; i < g_NumberOfTowerTypes; ++i)
 	{
-		const std::string gunTowerPath {g_GunTowerPath + std::to_string(i) + ".png"};
-		TextureFromFile(gunTowerPath, g_TowerSprites[i]);
+		for (int j {0}; j < g_MaxLevel; ++j)
+		{
+			const std::string lightningTowerPath {g_LightningTowerPath + std::to_string(j) + ".png"};
+			TextureFromFile(lightningTowerPath, g_TowerSprites[j]);
+		}
 	}
 	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
 
@@ -348,34 +366,54 @@ void DrawGrid()
 
 void DrawEnemies()
 {
-	for (int enemyIndex {0}; enemyIndex < g_Enemies.size(); ++enemyIndex)
+	for (const Enemy& enemy : g_Enemies)
 	{
-		if (g_Enemies[enemyIndex].state != EnemyState::alive) continue;
-		switch (g_Enemies[enemyIndex].enemyType)
+		if (enemy.state != EnemyState::alive) continue;
+		switch (enemy.enemyType)
 		{
 		case EnemyType::goober:
-			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndices.at(g_Enemies[enemyIndex].pathIndex)));
+			DrawTexture(g_EnemySprites[0], GetRectFromGridPosition(g_PathIndices.at(enemy.pathIndex)));
 			break;
 		case EnemyType::angryGoober:
-			DrawTexture(g_EnemySprites[1], GetRectFromGridPosition(g_PathIndices.at(g_Enemies[enemyIndex].pathIndex)));
+			DrawTexture(g_EnemySprites[1], GetRectFromGridPosition(g_PathIndices.at(enemy.pathIndex)));
 			break;
 		default:
 			break;
 		}
+		DrawEnemyHealth(enemy);
 	}
+}
+
+void DrawEnemyHealth(Enemy enemy)
+{
+	const Rectf enemyRect {GetRectFromGridPosition(g_PathIndices.at(enemy.pathIndex))};
+	const float widthPerHealth {enemyRect.width / enemy.maxHealth};
+	const float currentHealthWidth {widthPerHealth * enemy.health};
+	const float healthBarHeight {enemyRect.height / 10};
+	Rectf healthBar
+	{
+		enemyRect.left,
+		enemyRect.top,
+		currentHealthWidth,
+		healthBarHeight
+	};
+
+	SetColor(1.f, 0.f, 0.f);
+	FillRect(healthBar);
 }
 
 void DrawTowers()
 {
 	for (size_t towerIndex {0}; towerIndex < g_Towers.size(); ++towerIndex)
 	{
-		for (int tileIndex {0}; tileIndex < g_Rows * g_Columns; ++tileIndex)
+		switch (g_Towers.at(towerIndex).level)
 		{
-			const TileIndex currentTile {GetRow(tileIndex, g_Columns), GetCol(tileIndex, g_Columns)};
-
-			if (g_Grid[currentTile.row][currentTile.column].state != TileState::tower) continue;
-
-			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(currentTile));
+		case 1:
+			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+			break;
+		case 2:
+			DrawTexture(g_TowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+			break;
 		}
 
 		if (g_Towers.at(towerIndex).isSelected)
@@ -391,7 +429,7 @@ void DrawTowers()
 	}
 }
 
-void DrawRange(int towerIndex, int range)
+void DrawRange(size_t towerIndex, int range)
 {
 	const TileIndex topLeftTile {g_Towers.at(towerIndex).gridPosition.row - range, g_Towers.at(towerIndex).gridPosition.column - range};
 	const TileIndex bottomRightTile {g_Towers.at(towerIndex).gridPosition.row + range, g_Towers.at(towerIndex).gridPosition.column + range};
@@ -498,15 +536,15 @@ void SpawnEnemies()
 	const int startPathIndex {0};
 	if (RandomDecimal() < spawnChance)
 	{
-		const float angryChance {0.33f};
+		const float angryChance {g_TurnCounter / 1000.f};
 		if (RandomDecimal() < angryChance)
 		{
 			const int angryGooberMaxHealth {8};
-			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, EnemyState::alive, angryGooberMaxHealth};
+ 			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, EnemyState::alive, angryGooberMaxHealth, angryGooberMaxHealth};
 			g_Enemies.push_back(newEnemy);
 			return;
 		}
-		Enemy newEnemy {EnemyType::goober, startPathIndex, EnemyState::alive, gooberMaxHealth};
+		Enemy newEnemy {EnemyType::goober, startPathIndex, EnemyState::alive, gooberMaxHealth, gooberMaxHealth};
 		g_Enemies.push_back(newEnemy);
 	}
 }
@@ -574,7 +612,7 @@ void ApplyDamage()
 			switch (tower.towerType)
 			{
 			case TowerType::lightning:
-				LightningChainDamage(enemy, 1);
+				LightningChainDamage(enemy, tower.level);
 				break;
 			}
 		}
@@ -719,6 +757,12 @@ void SelectNewTargetTile(size_t towerIndex)
 	if (!IsTargetTileInRange(g_Towers.at(towerIndex))) return;
 
 	g_Towers.at(towerIndex).targetTile = g_HoveredTile;
+}
+
+void UpgradeTower()
+{
+	if (g_Towers.at(GetSelectedTower()).level == g_MaxLevel) return;
+	++g_Towers.at(GetSelectedTower()).level;
 }
 #pragma endregion
 #pragma endregion
