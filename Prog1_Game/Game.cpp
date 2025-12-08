@@ -13,7 +13,6 @@ void Start()
 	JumpOverlappingEnemies();
 }
 
-
 void Draw()
 {
 	ClearBackground(0.f, 0.f, 0.f);
@@ -57,7 +56,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 
 void OnKeyUpEvent(SDL_Keycode key)
 {
-
+	ChangeTowerType(key);
 }
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
@@ -169,13 +168,14 @@ bool TileHasEnemy(int pathIndex)
 	return false;
 }
 
-int GetSelectedTower()
+size_t GetSelectedTower()
 {
 	for (size_t i = 0; i < g_Towers.size(); i++)
 	{
 		if (g_Towers.at(i).isSelected == false) continue;
 		return i;
 	}
+	return -1; //this will crash but it's never called in a way that this is possible
 }
 #pragma endregion
 
@@ -208,14 +208,16 @@ void InitializeResources()
 	{
 		std::cout << "Error loading marker texture";
 	}
-	for (int i {0}; i < g_NumberOfTowerTypes; ++i)
+
+	for (int i {0}; i < g_MaxLevel; ++i)
 	{
-		for (int j {0}; j < g_MaxLevel; ++j)
-		{
-			const std::string lightningTowerPath {g_LightningTowerPath + std::to_string(j) + ".png"};
-			TextureFromFile(lightningTowerPath, g_TowerSprites[j]);
-		}
+		std::string lightningTowerPath {g_LightningTowerPath + std::to_string(i) + ".png"};
+		TextureFromFile(lightningTowerPath, g_LightningTowerSprites[i]);
+
+		std::string fireTowerPath {g_FireTowerPath + std::to_string(i) + ".png"};
+		TextureFromFile(fireTowerPath, g_FireTowerSprites[i]);
 	}
+
 	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
 
 	TextureFromFile("Resources/heart_red.png", g_HeartSprite);
@@ -406,15 +408,30 @@ void DrawTowers()
 {
 	for (size_t towerIndex {0}; towerIndex < g_Towers.size(); ++towerIndex)
 	{
-		switch (g_Towers.at(towerIndex).level)
+		if (g_Towers.at(towerIndex).towerType == TowerType::lightning)
 		{
-		case 1:
-			DrawTexture(g_TowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-			break;
-		case 2:
-			DrawTexture(g_TowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-			break;
+			switch (g_Towers.at(towerIndex).level)
+			{
+			case 1:
+				DrawTexture(g_LightningTowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+				break;
+			case 2:
+				DrawTexture(g_LightningTowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+				break;
+			}
 		}
+		else if (g_Towers.at(towerIndex).towerType == TowerType::fire)
+		{
+			switch (g_Towers.at(towerIndex).level)
+			{
+			case 1:
+				DrawTexture(g_FireTowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+				break;
+			case 2:
+				DrawTexture(g_FireTowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+			}
+		}
+
 
 		if (g_Towers.at(towerIndex).isSelected)
 		{
@@ -423,7 +440,7 @@ void DrawTowers()
 			SetColor(1.f, 0.f, 0.f);
 			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
 
-			int range {g_LightningTowerRange};
+			int range {g_Towers.at(towerIndex).range};
 			DrawRange(towerIndex, range);
 		}
 	}
@@ -531,7 +548,7 @@ void AdvanceEnemies()
 
 void SpawnEnemies()
 {
-	const float spawnChance {0.25f};
+	const float spawnChance {0.33f};
 	const int gooberMaxHealth {4};
 	const int startPathIndex {0};
 	if (RandomDecimal() < spawnChance)
@@ -614,9 +631,13 @@ void ApplyDamage()
 			case TowerType::lightning:
 				LightningChainDamage(enemy, tower.level);
 				break;
+			case TowerType::fire:
+				FireTowerDamage(enemy, tower.level);
+				break;
 			}
 		}
 	}
+	ApplyBurnDamage();
 	KillEnemies();
 }
 
@@ -627,7 +648,7 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 	int currentChain {0};
 	int towerDamage {towerLevel};
 
-	enemy.health -= towerLevel;
+	enemy.health -= towerDamage;
 
 	while (TileHasEnemy(pathIndex) && currentChain < maxChain)
 	{
@@ -638,6 +659,25 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 		}
 		--pathIndex;
 		++currentChain;
+	}
+}
+
+void FireTowerDamage(Enemy& enemy, int towerLevel)
+{
+	int pathIndex {enemy.pathIndex};
+	int towerDamage {towerLevel + 1};
+
+	enemy.health -= towerDamage;
+	enemy.ailment = EnemyAilment::burnt;
+}
+
+void ApplyBurnDamage()
+{
+	for (Enemy& enemy : g_Enemies)
+	{
+		if (enemy.ailment != EnemyAilment::burnt) continue;
+
+		--enemy.health;
 	}
 }
 
@@ -658,22 +698,42 @@ void PlaceTower()
 	if (!IsTileFree(g_HoveredTile)) return;
 
 	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
-	PlaceLightningTower();
-
+	switch (g_SelectedTowerType)
+	{
+	case TowerType::lightning:
+		PlaceLightningTower();
+		break;
+	case TowerType::fire:
+		PlaceFireTower();
+		break;
+	default:
+		break;
+	}
 	//TODO: Remove some kind of ressource (Action Point)
 }
 
 void PlaceLightningTower()
 {
 	const bool selected {true};
-	const int lightningTowerRange {2};
 	const int level {1};
-	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), true, lightningTowerRange, level};
+	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), selected, g_LightningTowerRange, level};
 	if (!SetDefaultTargetTile(defaultLightningTower))
 	{
 		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
 	}
 	g_Towers.push_back(defaultLightningTower);
+}
+
+void PlaceFireTower()
+{
+	const bool selected {true};
+	const int level {1};
+	Tower defaultFireTower {TowerType::fire, g_HoveredTile, g_PathIndices.at(0), selected, g_FireTowerRange, level};
+	if (!SetDefaultTargetTile(defaultFireTower))
+	{
+		defaultFireTower.targetTile = defaultFireTower.gridPosition;
+	}
+	g_Towers.push_back(defaultFireTower);
 }
 #pragma endregion
 
@@ -716,10 +776,12 @@ void FreeResources()
 	DeleteTexture(g_PathTexture);
 	DeleteTexture(g_HoveredTileTexture);
 
-	for (int i {0}; i < g_NumberOfTowerTypes; ++i)
+	for (int i {0}; i < g_MaxLevel; ++i)
 	{
-		DeleteTexture(g_TowerSprites[i]);
+		DeleteTexture(g_LightningTowerSprites[i]);
+		DeleteTexture(g_FireTowerSprites[i]);
 	}
+
 }
 #pragma endregion
 
@@ -763,6 +825,19 @@ void UpgradeTower()
 {
 	if (g_Towers.at(GetSelectedTower()).level == g_MaxLevel) return;
 	++g_Towers.at(GetSelectedTower()).level;
+}
+
+void ChangeTowerType(SDL_Keycode key)
+{
+	switch (key)
+	{
+	case SDLK_1:
+		g_SelectedTowerType = TowerType::lightning;
+		break;
+	case SDLK_2:
+		g_SelectedTowerType = TowerType::fire;
+		break;
+	}
 }
 #pragma endregion
 #pragma endregion

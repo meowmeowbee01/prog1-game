@@ -93,7 +93,9 @@ std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
 const int g_MaxLevel {2};
-const int g_LightningTowerRange {2};
+const int g_LightningTowerRange {1};
+const int g_FireTowerRange {2};
+TowerType g_SelectedTowerType {};
 
 int g_TurnCounter {0};
 
@@ -129,9 +131,13 @@ Texture g_PathTextures[g_NumberOfPathTextures] {};
 
 Texture g_HoveredTileTexture {};
 
+const int g_NumTowerTypes {2};
+
 std::string g_LightningTowerPath {"Resources/LightningTower_"};
-const int g_NumberOfTowerTypes {1};
-Texture g_TowerSprites[g_MaxLevel] {};
+Texture g_LightningTowerSprites[g_MaxLevel] {};
+
+std::string g_FireTowerPath {"Resources/FireTower_"};
+Texture g_FireTowerSprites[g_MaxLevel] {};
 
 Texture g_CrosshairSprite {};
 
@@ -153,7 +159,7 @@ bool IsTileFree(TileIndex tileIndex);
 bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
-int GetSelectedTower();
+size_t GetSelectedTower();
 #pragma endregion
 
 #pragma region start
@@ -189,10 +195,13 @@ void DeleteReachedGoalEnemies();
 
 void ApplyDamage();
 void LightningChainDamage(Enemy& enemy, int towerLevel);
+void FireTowerDamage(Enemy& enemy, int towerLevel);
+void ApplyBurnDamage();
 void KillEnemies();
 
 void PlaceTower();
 void PlaceLightningTower();
+void PlaceFireTower();
 #pragma endregion
 
 #pragma region update
@@ -212,6 +221,7 @@ void SelectTower();
 void DeselectOtherTowers(size_t selectedTowerIndex);
 void SelectNewTargetTile(size_t towerIndex);
 void UpgradeTower();
+void ChangeTowerType(SDL_Keycode key);
 #pragma endregion
 #pragma endregion
 #pragma endregion
