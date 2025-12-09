@@ -38,12 +38,6 @@ enum class EnemyType
 	goober,
 	angryGoober
 };
-enum class EnemyState
-{
-	alive,
-	dead,
-	reachedGoal
-};
 enum class TowerType
 {
 	lightning,
@@ -67,7 +61,6 @@ struct Enemy
 {
 	EnemyType enemyType;
 	int pathIndex;
-	EnemyState state;
 	int maxHealth;
 	int health;
 	EnemyAilment ailment;
@@ -160,6 +153,7 @@ bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
 size_t GetSelectedTower();
+void DeleteAtIndices(const std::vector<int>& indicesToDelete);
 #pragma endregion
 
 #pragma region start
@@ -185,6 +179,8 @@ void DrawPlayerHealth();
 
 void AdvanceTurn();
 
+void HandleDeadEnemies();
+
 void SpawnEnemies();
 
 void AdvanceEnemies();
@@ -193,11 +189,11 @@ void JumpIfOverlapping(Enemy& enemy);
 void HandleReachedGoalEnemies();
 void DeleteReachedGoalEnemies();
 
-void ApplyDamage();
+void ActivateTowerEffects();
 void LightningChainDamage(Enemy& enemy, int towerLevel);
 void FireTowerDamage(Enemy& enemy, int towerLevel);
 void ApplyBurnDamage();
-void KillEnemies();
+void DeleteDeadEnemies();
 
 void PlaceTower();
 void PlaceLightningTower();

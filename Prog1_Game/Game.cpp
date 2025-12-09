@@ -127,7 +127,7 @@ bool IsTileFree(TileIndex tileIndex)
 
 bool IsTargetTileInRange(const Tower& tower)
 {
-	if (abs(tower.gridPosition.row - g_HoveredTile.row) > tower.range || 
+	if (abs(tower.gridPosition.row - g_HoveredTile.row) > tower.range ||
 		abs(tower.gridPosition.column - g_HoveredTile.column) > tower.range)
 	{
 		return false;
@@ -176,6 +176,15 @@ size_t GetSelectedTower()
 		return i;
 	}
 	return -1; //this will crash but it's never called in a way that this is possible
+}
+
+void DeleteAtIndices(const std::vector<int>& indicesToDelete)
+{
+	for (int i : indicesToDelete)
+	{
+		std::swap(g_Enemies[i], g_Enemies.back());
+		g_Enemies.pop_back();
+	}
 }
 #pragma endregion
 
@@ -370,7 +379,6 @@ void DrawEnemies()
 {
 	for (const Enemy& enemy : g_Enemies)
 	{
-		if (enemy.state != EnemyState::alive) continue;
 		switch (enemy.enemyType)
 		{
 		case EnemyType::goober:
@@ -522,12 +530,25 @@ void AdvanceTurn()
 	AdvanceEnemies();
 	SpawnEnemies();
 	JumpOverlappingEnemies();
+
 	HandleReachedGoalEnemies();
-	
-	DeleteReachedGoalEnemies();
-	ApplyDamage();
+
+	ActivateTowerEffects();
+	ApplyBurnDamage();
+
+	HandleDeadEnemies();
 
 	++g_TurnCounter;
+}
+
+void HandleDeadEnemies()
+{
+	std::vector<int> indicesToDelete {};
+	for (int i {0}; i < g_Enemies.size(); ++i)
+	{
+		if (g_Enemies[i].health < 0) indicesToDelete.push_back(i);
+	}
+	DeleteAtIndices(indicesToDelete);
 }
 
 void AdvanceEnemies()
@@ -557,11 +578,11 @@ void SpawnEnemies()
 		if (RandomDecimal() < angryChance)
 		{
 			const int angryGooberMaxHealth {8};
- 			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, EnemyState::alive, angryGooberMaxHealth, angryGooberMaxHealth};
+			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth};
 			g_Enemies.push_back(newEnemy);
 			return;
 		}
-		Enemy newEnemy {EnemyType::goober, startPathIndex, EnemyState::alive, gooberMaxHealth, gooberMaxHealth};
+		Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth};
 		g_Enemies.push_back(newEnemy);
 	}
 }
@@ -580,18 +601,25 @@ void JumpOverlappingEnemies()
 
 void HandleReachedGoalEnemies()
 {
-	for (Enemy& enemy : g_Enemies)
+	std::vector<int> indicesToDelete {};
+
+	for (int i {0}; i < g_Enemies.size(); ++i)
 	{
-		if (enemy.pathIndex >= g_PathIndices.size())
+		if (g_Enemies[i].pathIndex >= g_PathIndices.size())
 		{
-			enemy.state = EnemyState::reachedGoal;
 			--g_PlayerHealth;
 			if (g_PlayerHealth == 0)
 			{
 				std::cout << "GAME OVER NOOB!";
 				//TODO: Add proper game over
 			}
+			indicesToDelete.push_back(i);
 		}
+	}
+	for (int i : indicesToDelete)
+	{
+		std::swap(g_Enemies[i], g_Enemies.back());
+		g_Enemies.pop_back();
 	}
 }
 
@@ -607,20 +635,9 @@ void JumpIfOverlapping(Enemy& enemy)
 	}
 }
 
-void DeleteReachedGoalEnemies()
+void ActivateTowerEffects()
 {
-	std::erase_if(
-		g_Enemies,
-		[](const Enemy& enemy) -> bool
-		{
-			return enemy.pathIndex >= g_PathIndices.size();
-		}
-	);
-}
-
-void ApplyDamage()
-{
-	for (Tower& tower : g_Towers)
+	for (const Tower& tower : g_Towers)
 	{
 		for (Enemy& enemy : g_Enemies)
 		{
@@ -637,8 +654,6 @@ void ApplyDamage()
 			}
 		}
 	}
-	ApplyBurnDamage();
-	KillEnemies();
 }
 
 void LightningChainDamage(Enemy& enemy, int towerLevel)
@@ -664,7 +679,6 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 
 void FireTowerDamage(Enemy& enemy, int towerLevel)
 {
-	int pathIndex {enemy.pathIndex};
 	int towerDamage {towerLevel + 1};
 
 	enemy.health -= towerDamage;
@@ -679,17 +693,6 @@ void ApplyBurnDamage()
 
 		--enemy.health;
 	}
-}
-
-void KillEnemies()
-{
-	std::erase_if(
-		g_Enemies,
-		[](const Enemy& enemy) -> bool
-		{
-			return enemy.health <= 0;
-		}
-	);
 }
 
 void PlaceTower()
