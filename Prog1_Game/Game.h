@@ -64,6 +64,7 @@ struct Enemy
 	int maxHealth;
 	int health;
 	EnemyAilment ailment;
+	int speed;
 };
 struct Tower
 {
@@ -153,7 +154,6 @@ bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
 size_t GetSelectedTower();
-void DeleteAtIndices(const std::vector<int>& indicesToDelete);
 #pragma endregion
 
 #pragma region start
@@ -179,21 +179,20 @@ void DrawPlayerHealth();
 
 void AdvanceTurn();
 
-void HandleDeadEnemies();
+void KeepJumpingOverlappingAndHandleReachedGoal();
 
 void SpawnEnemies();
 
 void AdvanceEnemies();
-void JumpOverlappingEnemies();
-void JumpIfOverlapping(Enemy& enemy);
+bool JumpOverlappingEnemies();
+bool JumpIfOverlapping(Enemy& enemy);
 void HandleReachedGoalEnemies();
-void DeleteReachedGoalEnemies();
+void HandleDeadEnemies();
 
 void ActivateTowerEffects();
 void LightningChainDamage(Enemy& enemy, int towerLevel);
 void FireTowerDamage(Enemy& enemy, int towerLevel);
 void ApplyBurnDamage();
-void DeleteDeadEnemies();
 
 void PlaceTower();
 void PlaceLightningTower();

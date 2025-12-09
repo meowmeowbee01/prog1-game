@@ -177,15 +177,6 @@ size_t GetSelectedTower()
 	}
 	return -1; //this will crash but it's never called in a way that this is possible
 }
-
-void DeleteAtIndices(const std::vector<int>& indicesToDelete)
-{
-	for (int i : indicesToDelete)
-	{
-		std::swap(g_Enemies[i], g_Enemies.back());
-		g_Enemies.pop_back();
-	}
-}
 #pragma endregion
 
 #pragma region start
@@ -528,10 +519,10 @@ void DrawPlayerHealth()
 void AdvanceTurn()
 {
 	AdvanceEnemies();
-	SpawnEnemies();
-	JumpOverlappingEnemies();
-
 	HandleReachedGoalEnemies();
+
+	SpawnEnemies();
+	KeepJumpingOverlappingAndHandleReachedGoal();
 
 	ActivateTowerEffects();
 	ApplyBurnDamage();
@@ -541,97 +532,99 @@ void AdvanceTurn()
 	++g_TurnCounter;
 }
 
-void HandleDeadEnemies()
-{
-	std::vector<int> indicesToDelete {};
-	for (int i {0}; i < g_Enemies.size(); ++i)
-	{
-		if (g_Enemies[i].health < 0) indicesToDelete.push_back(i);
-	}
-	DeleteAtIndices(indicesToDelete);
-}
-
 void AdvanceEnemies()
 {
 	for (Enemy& enemy : g_Enemies)
 	{
-		switch (enemy.enemyType)
-		{
-		case EnemyType::goober:
-			++enemy.pathIndex;
-			break;
-		case EnemyType::angryGoober:
-			enemy.pathIndex += 2;
-			break;
-		}
+		enemy.pathIndex += enemy.speed;
 	}
 }
 
 void SpawnEnemies()
 {
-	const float spawnChance {0.33f};
-	const int gooberMaxHealth {4};
 	const int startPathIndex {0};
+
+	const int gooberMaxHealth {4};
+	const int angryGooberMaxHealth {8};
+
+	float spawnChance {0.05f};
+	if (g_TurnCounter == 0) spawnChance = 1.f;
+	const float angryChance {g_TurnCounter / 1000.f};
+
 	if (RandomDecimal() < spawnChance)
 	{
-		const float angryChance {g_TurnCounter / 1000.f};
-		if (RandomDecimal() < angryChance)
-		{
-			const int angryGooberMaxHealth {8};
-			Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth};
-			g_Enemies.push_back(newEnemy);
-			return;
-		}
-		Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth};
-		g_Enemies.push_back(newEnemy);
-	}
-}
+		const int batchSize {RandomIntInRange(1,15)};
 
-void JumpOverlappingEnemies()
-{
-	const size_t otherEnemies {g_Enemies.size()};
-	for (int i {0}; i < otherEnemies; ++i) //keep looping until enemies can not be on the same spot
-	{
-		for (Enemy& enemy : g_Enemies) //for every enemy
+		for (int i {0}; i < batchSize; ++i)
 		{
-			JumpIfOverlapping(enemy);
-		}
-	}
-}
-
-void HandleReachedGoalEnemies()
-{
-	std::vector<int> indicesToDelete {};
-
-	for (int i {0}; i < g_Enemies.size(); ++i)
-	{
-		if (g_Enemies[i].pathIndex >= g_PathIndices.size())
-		{
-			--g_PlayerHealth;
-			if (g_PlayerHealth == 0)
+			if (RandomDecimal() < angryChance)
 			{
-				std::cout << "GAME OVER NOOB!";
-				//TODO: Add proper game over
+				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth, EnemyAilment::none, 2};
+				g_Enemies.push_back(newEnemy);
 			}
-			indicesToDelete.push_back(i);
+			else
+			{
+				Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth, EnemyAilment::none, 1};
+				g_Enemies.push_back(newEnemy);
+			}
 		}
-	}
-	for (int i : indicesToDelete)
-	{
-		std::swap(g_Enemies[i], g_Enemies.back());
-		g_Enemies.pop_back();
 	}
 }
 
-void JumpIfOverlapping(Enemy& enemy)
+void KeepJumpingOverlappingAndHandleReachedGoal()
+{
+	bool needsToJump {true};
+	while (needsToJump)
+	{
+		needsToJump = JumpOverlappingEnemies();
+		HandleReachedGoalEnemies();
+	}
+}
+
+bool JumpOverlappingEnemies()
+{
+	bool hasJumped {false};
+
+	for (Enemy& enemy : g_Enemies)
+	{
+		if (JumpIfOverlapping(enemy)) hasJumped = true;
+	}
+	return hasJumped;
+}
+
+bool JumpIfOverlapping(Enemy& enemy)
 {
 	for (const Enemy& otherEnemy : g_Enemies) //compare with every other enemy
 	{
 		if (&enemy == &otherEnemy) continue; //not itself
-		if (enemy.pathIndex == otherEnemy.pathIndex)
+		if (enemy.pathIndex != otherEnemy.pathIndex) continue; //not the same position
+		if (enemy.speed < otherEnemy.speed) continue; //let the faster enemy jump first
+		enemy.pathIndex += enemy.speed;
+		return true;
+	}
+	return false;
+}
+
+void HandleReachedGoalEnemies()
+{
+	for (const Enemy& enemy : g_Enemies)
+	{
+		if (enemy.pathIndex < g_PathIndices.size()) continue;
+		--g_PlayerHealth;
+	}
+
+	std::erase_if(
+		g_Enemies,
+		[](const Enemy& enemy) -> bool
 		{
-			++enemy.pathIndex;
+			return enemy.pathIndex >= g_PathIndices.size();
 		}
+	);
+
+	if (g_PlayerHealth <= 0)
+	{
+		std::cout << "GAME OVER NOOB!\n";
+		//TODO: Add proper game over
 	}
 }
 
@@ -693,6 +686,17 @@ void ApplyBurnDamage()
 
 		--enemy.health;
 	}
+}
+
+void HandleDeadEnemies()
+{
+	std::erase_if(
+		g_Enemies,
+		[](const Enemy& enemy) -> bool
+		{
+			return enemy.health <= 0;
+		}
+	);
 }
 
 void PlaceTower()
