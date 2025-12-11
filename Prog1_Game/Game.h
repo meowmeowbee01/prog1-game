@@ -86,7 +86,7 @@ std::vector<TileIndex> g_PathIndices {};
 std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
-const int g_MaxLevel {2};
+const int g_MaxLevel {1};
 const int g_LightningTowerRange {1};
 const int g_FireTowerRange {2};
 TowerType g_SelectedTowerType {};
@@ -95,7 +95,7 @@ const int g_FireTowerCost {4};
 
 int g_TurnCounter {0};
 
-int g_ActionPoints {2}; 
+int g_ActionPoints {2};
 const int g_MaxActionPoints {3};
 int g_ActionPointGrowth {1};
 int g_ActionPointProgress {};
@@ -135,11 +135,11 @@ Texture g_HoveredTileTexture {};
 
 const int g_NumTowerTypes {2};
 
-std::string g_LightningTowerPath {"Resources/LightningTower_"};
-Texture g_LightningTowerSprites[g_MaxLevel] {};
+const std::string g_LightningTowerPath {"Resources/LightningTower_"};
+Texture g_LightningTowerSprites[g_MaxLevel + 1] {};
 
-std::string g_FireTowerPath {"Resources/FireTower_"};
-Texture g_FireTowerSprites[g_MaxLevel] {};
+const std::string g_FireTowerPath {"Resources/FireTower_"};
+Texture g_FireTowerSprites[g_MaxLevel + 1] {};
 
 Texture g_CrosshairSprite {};
 
@@ -180,11 +180,16 @@ void DrawGrid();
 void DrawEnemies();
 void DrawEnemyHealth(const Enemy& enemy);
 void DrawTowers();
+void DrawTower(const Tower& tower);
+void DrawTower(const TowerType towerType, const int towerLevel, const Rectf& destinationRect);
+void DrawFireTower(const int level, const Rectf& destinationRect);
+void DrawLightningTower(const int level, const Rectf& destinationRect);
 void DrawRange(size_t towerIndex, int range);
 void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
 void DrawPlayerHealth();
 void DrawPlayerActionPoints();
+void DrawSelectedTower();
 #pragma endregion
 
 #pragma region gameLogic

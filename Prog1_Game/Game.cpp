@@ -26,6 +26,7 @@ void Draw()
 
 	DrawPlayerHealth();
 	DrawPlayerActionPoints();
+	DrawSelectedTower();
 }
 
 void Update(float elapsedSec)
@@ -49,6 +50,9 @@ void OnKeyDownEvent(SDL_Keycode key)
 		break;
 	case SDL_KeyCode::SDLK_u:
 		UpgradeTower();
+		break;
+	case SDLK_F3:
+		g_ActionPoints = 100;
 		break;
 	default:
 		break;
@@ -194,14 +198,14 @@ void InitializeResources()
 		const std::string enemyPath {g_EnemyPath + std::to_string(i) + ".png"};
 		if (!TextureFromFile(enemyPath, g_EnemySprites[i]))
 		{
-			std::cout << "Error loading enemy texture";
+			std::cout << "Error loading enemy texture\n";
 		}
 	}
 
 	const std::string GrassPath {"Resources/Grass.jpg"};
 	if (!TextureFromFile(GrassPath, g_GrassTexture))
 	{
-		std::cout << "Error loading grass texture";
+		std::cout << "Error loading grass texture\n";
 	}
 
 	for (int i {0}; i < g_NumberOfPathTextures; ++i)
@@ -212,16 +216,22 @@ void InitializeResources()
 
 	if (!TextureFromFile("Resources/Hovered_Tile.png", g_HoveredTileTexture))
 	{
-		std::cout << "Error loading marker texture";
+		std::cout << "Error loading marker texture\n";
 	}
 
-	for (int i {0}; i < g_MaxLevel; ++i)
+	for (int i {0}; i <= g_MaxLevel; ++i)
 	{
 		std::string lightningTowerPath {g_LightningTowerPath + std::to_string(i) + ".png"};
-		TextureFromFile(lightningTowerPath, g_LightningTowerSprites[i]);
+		if (!TextureFromFile(lightningTowerPath, g_LightningTowerSprites[i]))
+		{
+			std::cout << "Error loading lightning tower texture\n";
+		}
 
 		std::string fireTowerPath {g_FireTowerPath + std::to_string(i) + ".png"};
-		TextureFromFile(fireTowerPath, g_FireTowerSprites[i]);
+		if (!TextureFromFile(fireTowerPath, g_FireTowerSprites[i]))
+		{
+			std::cout << "Error loading fire tower texture\n";
+		}
 	}
 
 	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
@@ -415,42 +425,50 @@ void DrawTowers()
 {
 	for (size_t towerIndex {0}; towerIndex < g_Towers.size(); ++towerIndex)
 	{
-		if (g_Towers.at(towerIndex).towerType == TowerType::lightning)
-		{
-			switch (g_Towers.at(towerIndex).level)
-			{
-			case 1:
-				DrawTexture(g_LightningTowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-				break;
-			case 2:
-				DrawTexture(g_LightningTowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-				break;
-			}
-		}
-		else if (g_Towers.at(towerIndex).towerType == TowerType::fire)
-		{
-			switch (g_Towers.at(towerIndex).level)
-			{
-			case 1:
-				DrawTexture(g_FireTowerSprites[0], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-				break;
-			case 2:
-				DrawTexture(g_FireTowerSprites[1], GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
-			}
-		}
+		const Tower tower {g_Towers.at(towerIndex)};
+		DrawTower(tower);
 
-
-		if (g_Towers.at(towerIndex).isSelected)
+		if (tower.isSelected)
 		{
-			HighlightTargetTile(g_Towers.at(towerIndex).targetTile);
+			HighlightTargetTile(tower.targetTile);
 
 			SetColor(1.f, 0.f, 0.f);
-			DrawRect(GetRectFromGridPosition(g_Towers.at(towerIndex).gridPosition));
+			DrawRect(GetRectFromGridPosition(tower.gridPosition));
 
-			int range {g_Towers.at(towerIndex).range};
+			int range {tower.range};
 			DrawRange(towerIndex, range);
 		}
 	}
+}
+
+void DrawTower(const Tower& tower)
+{
+	DrawTower(tower.towerType, tower.level, GetRectFromGridPosition(tower.gridPosition));
+}
+
+void DrawTower(const TowerType towerType, const int towerLevel, const Rectf& destinationRect)
+{
+	switch (towerType)
+	{
+	case TowerType::lightning:
+		DrawLightningTower(towerLevel, destinationRect);
+		break;
+	case TowerType::fire:
+		DrawFireTower(towerLevel, destinationRect);
+		break;
+	default:
+		break;
+	}
+}
+
+void DrawFireTower(const int level, const Rectf& destinationRect)
+{
+	DrawTexture(g_FireTowerSprites[level], destinationRect);
+}
+
+void DrawLightningTower(const int level, const Rectf& destinationRect)
+{
+	DrawTexture(g_LightningTowerSprites[level], destinationRect);
 }
 
 void DrawRange(size_t towerIndex, int range)
@@ -509,7 +527,7 @@ void DrawPlayerHealth()
 	for (int i {0}; i < g_PlayerHealth; ++i)
 	{
 		const Rectf heartPosition {GetRectFromGridPosition(TileIndex{verticalOffset, i})};
-	
+
 		DrawTexture(g_HeartSprite, heartPosition);
 	}
 }
@@ -520,7 +538,7 @@ void DrawPlayerActionPoints()
 	for (int i {0}; i < g_ActionPoints; ++i)
 	{
 		const Rectf position {GetRectFromGridPosition(TileIndex{verticalOffset, (g_Columns - 1) - i})};
-		
+
 		DrawTexture(g_ActionPointSprite, position);
 	}
 
@@ -547,6 +565,13 @@ void DrawPlayerActionPoints()
 	};
 
 	DrawTexture(g_ActionPointSprite, adjustedPosition, sourceRect);
+}
+
+void DrawSelectedTower()
+{
+	const int verticalOffset {-3};
+	const Rectf previewPosition {GetRectFromGridPosition(TileIndex{verticalOffset, g_Columns - 1})};
+	DrawTower(g_SelectedTowerType, 0, previewPosition);
 }
 #pragma endregion
 
@@ -699,9 +724,9 @@ void ActivateTowerEffects()
 void LightningChainDamage(Enemy& enemy, int towerLevel)
 {
 	int pathIndex {enemy.pathIndex};
-	const int maxChain {towerLevel * 3};
+	const int maxChain {(towerLevel + 1) * 3};
 	int currentChain {0};
-	int towerDamage {towerLevel};
+	int towerDamage {towerLevel + 1};
 
 	enemy.health -= towerDamage;
 
@@ -752,27 +777,27 @@ void PlaceTower()
 	if (!UpdateHoveredTile()) return;
 	if (!IsTileFree(g_HoveredTile)) return;
 
-	g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
 	switch (g_SelectedTowerType)
 	{
 	case TowerType::lightning:
 		if (!CanAfford(g_LightningTowerCost)) break;
 		PlaceLightningTower();
+		g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
 		break;
 	case TowerType::fire:
 		if (!CanAfford(g_FireTowerCost)) break;
 		PlaceFireTower();
+		g_Grid[g_HoveredTile.row][g_HoveredTile.column].state = TileState::tower;
 		break;
 	default:
 		break;
 	}
-	//TODO: Remove some kind of ressource (Action Point)
 }
 
 void PlaceLightningTower()
 {
 	const bool selected {true};
-	const int level {1};
+	const int level {0};
 	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), selected, g_LightningTowerRange, level};
 	if (!SetDefaultTargetTile(defaultLightningTower))
 	{
@@ -786,7 +811,7 @@ void PlaceLightningTower()
 void PlaceFireTower()
 {
 	const bool selected {true};
-	const int level {1};
+	const int level {0};
 	Tower defaultFireTower {TowerType::fire, g_HoveredTile, g_PathIndices.at(0), selected, g_FireTowerRange, level};
 	if (!SetDefaultTargetTile(defaultFireTower))
 	{
@@ -804,6 +829,7 @@ void AddActionPoints()
 	if (g_ActionPointProgress == g_ActionPointGenerationThreshhold && g_ActionPoints < g_MaxActionPoints)
 	{
 		++g_ActionPoints;
+		g_ActionPointProgress = 0;
 	}
 }
 #pragma endregion
@@ -847,7 +873,7 @@ void FreeResources()
 	DeleteTexture(g_PathTexture);
 	DeleteTexture(g_HoveredTileTexture);
 
-	for (int i {0}; i < g_MaxLevel; ++i)
+	for (int i {0}; i <= g_MaxLevel; ++i)
 	{
 		DeleteTexture(g_LightningTowerSprites[i]);
 		DeleteTexture(g_FireTowerSprites[i]);
@@ -896,7 +922,7 @@ void SelectNewTargetTile(size_t towerIndex)
 
 void UpgradeTower()
 {
-	if (g_Towers.at(GetSelectedTower()).level == g_MaxLevel) return;
+	if (g_Towers.at(GetSelectedTower()).level >= g_MaxLevel) return;
 	++g_Towers.at(GetSelectedTower()).level;
 }
 
