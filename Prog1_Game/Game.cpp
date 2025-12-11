@@ -53,6 +53,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 		break;
 	case SDLK_F3:
 		g_ActionPoints = 100;
+		std::cout << "Debug Mode\n";
 		break;
 	default:
 		break;
@@ -62,6 +63,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 void OnKeyUpEvent(SDL_Keycode key)
 {
 	ChangeTowerType(key);
+	IncreaseMaxEnergy(key);
 }
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
@@ -937,6 +939,20 @@ void ChangeTowerType(SDL_Keycode key)
 		g_SelectedTowerType = TowerType::fire;
 		break;
 	}
+}
+
+void IncreaseMaxEnergy(SDL_Keycode key)
+{
+	if (key != SDLK_m) return;
+	if (g_ActionPoints != g_MaxActionPoints) return;
+
+	g_ActionPoints = 0;
+	++g_MaxActionPointProgress;
+
+	if (g_MaxActionPointProgress < g_MaxActionPointIncreaseThreshhold) return;
+
+	++g_MaxActionPoints;
+	g_MaxActionPointProgress = 0;
 }
 #pragma endregion
 #pragma endregion

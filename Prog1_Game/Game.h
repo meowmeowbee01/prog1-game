@@ -96,10 +96,13 @@ const int g_FireTowerCost {4};
 int g_TurnCounter {0};
 
 int g_ActionPoints {2};
-const int g_MaxActionPoints {3};
 int g_ActionPointGrowth {1};
 int g_ActionPointProgress {};
 const int g_ActionPointGenerationThreshhold {5};
+
+int g_MaxActionPoints {3};
+int g_MaxActionPointProgress {};
+const int g_MaxActionPointIncreaseThreshhold {3};
 
 #pragma region scaleAndCenterGridConstants
 const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f};
@@ -236,6 +239,7 @@ void DeselectOtherTowers(size_t selectedTowerIndex);
 void SelectNewTargetTile(size_t towerIndex);
 void UpgradeTower();
 void ChangeTowerType(SDL_Keycode key);
+void IncreaseMaxEnergy(SDL_Keycode key);
 #pragma endregion
 #pragma endregion
 #pragma endregion
