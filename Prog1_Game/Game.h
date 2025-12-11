@@ -63,7 +63,7 @@ struct Enemy
 	int pathIndex;
 	int maxHealth;
 	int health;
-	EnemyAilment ailment;
+	int burnStacks;
 	int speed;
 };
 struct Tower
@@ -90,8 +90,16 @@ const int g_MaxLevel {2};
 const int g_LightningTowerRange {1};
 const int g_FireTowerRange {2};
 TowerType g_SelectedTowerType {};
+const int g_LightningTowerCost {2};
+const int g_FireTowerCost {4};
 
 int g_TurnCounter {0};
+
+int g_ActionPoints {2}; 
+const int g_MaxActionPoints {3};
+int g_ActionPointGrowth {1};
+int g_ActionPointProgress {};
+const int g_ActionPointGenerationThreshhold {5};
 
 #pragma region scaleAndCenterGridConstants
 const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f};
@@ -136,6 +144,8 @@ Texture g_FireTowerSprites[g_MaxLevel] {};
 Texture g_CrosshairSprite {};
 
 Texture g_HeartSprite {};
+
+Texture g_ActionPointSprite {};
 #pragma endregion
 
 Point2f g_MousePosition {};
@@ -154,6 +164,7 @@ bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
 size_t GetSelectedTower();
+bool CanAfford(int price);
 #pragma endregion
 
 #pragma region start
@@ -167,12 +178,13 @@ void InitializePath();
 void DrawTile(TileIndex gridIndex);
 void DrawGrid();
 void DrawEnemies();
-void DrawEnemyHealth(Enemy enemy);
+void DrawEnemyHealth(const Enemy& enemy);
 void DrawTowers();
 void DrawRange(size_t towerIndex, int range);
 void HighlightTargetTile(TileIndex targetTile);
 void HighlightHoveredTile();
 void DrawPlayerHealth();
+void DrawPlayerActionPoints();
 #pragma endregion
 
 #pragma region gameLogic
@@ -197,6 +209,8 @@ void ApplyBurnDamage();
 void PlaceTower();
 void PlaceLightningTower();
 void PlaceFireTower();
+
+void AddActionPoints();
 #pragma endregion
 
 #pragma region update

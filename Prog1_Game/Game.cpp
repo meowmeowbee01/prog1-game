@@ -25,6 +25,7 @@ void Draw()
 	DrawTowers();
 
 	DrawPlayerHealth();
+	DrawPlayerActionPoints();
 }
 
 void Update(float elapsedSec)
@@ -177,6 +178,11 @@ size_t GetSelectedTower()
 	}
 	return -1; //this will crash but it's never called in a way that this is possible
 }
+
+bool CanAfford(int price)
+{
+	return price <= g_ActionPoints;
+}
 #pragma endregion
 
 #pragma region start
@@ -221,6 +227,8 @@ void InitializeResources()
 	TextureFromFile("Resources/CrossHair2.png", g_CrosshairSprite);
 
 	TextureFromFile("Resources/heart_red.png", g_HeartSprite);
+
+	TextureFromFile("Resources/EnergyTexture.png", g_ActionPointSprite);
 }
 
 void InitializePath()
@@ -385,7 +393,7 @@ void DrawEnemies()
 	}
 }
 
-void DrawEnemyHealth(Enemy enemy)
+void DrawEnemyHealth(const Enemy& enemy)
 {
 	const Rectf enemyRect {GetRectFromGridPosition(g_PathIndices.at(enemy.pathIndex))};
 	const float widthPerHealth {enemyRect.width / enemy.maxHealth};
@@ -497,20 +505,48 @@ void HighlightHoveredTile()
 
 void DrawPlayerHealth()
 {
-	const Rectf topLeft {GetRectFromGridPosition(TileIndex{0, 0})};
-
+	const int verticalOffset {-2};
 	for (int i {0}; i < g_PlayerHealth; ++i)
 	{
-		const Rectf heartPos
-		{
-			topLeft.left + i * (g_CellSize + g_Padding),
-			topLeft.top - g_CellSize * 2,
-			topLeft.width,
-			topLeft.height
-		};
-
-		DrawTexture(g_HeartSprite, heartPos);
+		const Rectf heartPosition {GetRectFromGridPosition(TileIndex{verticalOffset, i})};
+	
+		DrawTexture(g_HeartSprite, heartPosition);
 	}
+}
+
+void DrawPlayerActionPoints()
+{
+	const int verticalOffset {-2};
+	for (int i {0}; i < g_ActionPoints; ++i)
+	{
+		const Rectf position {GetRectFromGridPosition(TileIndex{verticalOffset, (g_Columns - 1) - i})};
+		
+		DrawTexture(g_ActionPointSprite, position);
+	}
+
+	if (g_ActionPointProgress == 0 || g_ActionPoints == g_MaxActionPoints) return;
+
+	const float sourceRectHeight {g_ActionPointSprite.height / g_ActionPointGenerationThreshhold * g_ActionPointProgress};
+	const Rectf sourceRect
+	{
+		0.f,
+		0.f,
+		g_ActionPointSprite.width,
+		sourceRectHeight
+	};
+
+	const int unfinishedPointColumn {g_ActionPoints}; //left of the last full AP
+	const Rectf fullTilePosition {GetRectFromGridPosition(TileIndex{verticalOffset, (g_Columns - 1) - unfinishedPointColumn})};
+
+	const Rectf adjustedPosition
+	{
+		fullTilePosition.left,
+		fullTilePosition.top,
+		fullTilePosition.width,
+		fullTilePosition.height / g_ActionPointGenerationThreshhold * g_ActionPointProgress
+	};
+
+	DrawTexture(g_ActionPointSprite, adjustedPosition, sourceRect);
 }
 #pragma endregion
 
@@ -529,6 +565,7 @@ void AdvanceTurn()
 
 	HandleDeadEnemies();
 
+	AddActionPoints();
 	++g_TurnCounter;
 }
 
@@ -547,8 +584,13 @@ void SpawnEnemies()
 	const int gooberMaxHealth {4};
 	const int angryGooberMaxHealth {8};
 
+	const int burnStacks {0};
+
+	const int speed {1};
+	const int angrySpeed {2};
+
 	float spawnChance {0.05f};
-	if (g_TurnCounter == 0) spawnChance = 1.f;
+	if (g_Enemies.empty()) spawnChance = 1.f;
 	const float angryChance {g_TurnCounter / 1000.f};
 
 	if (RandomDecimal() < spawnChance)
@@ -559,12 +601,12 @@ void SpawnEnemies()
 		{
 			if (RandomDecimal() < angryChance)
 			{
-				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth, EnemyAilment::none, 2};
+				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth, burnStacks, angrySpeed};
 				g_Enemies.push_back(newEnemy);
 			}
 			else
 			{
-				Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth, EnemyAilment::none, 1};
+				Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth, burnStacks, speed};
 				g_Enemies.push_back(newEnemy);
 			}
 		}
@@ -585,10 +627,15 @@ bool JumpOverlappingEnemies()
 {
 	bool hasJumped {false};
 
-	for (Enemy& enemy : g_Enemies)
+	for (int i = static_cast<int>(g_PathIndices.size()) - 1; i >= 0; --i)
 	{
-		if (JumpIfOverlapping(enemy)) hasJumped = true;
+		for (Enemy& enemy : g_Enemies)
+		{
+			if (enemy.pathIndex != i) continue;
+			if (JumpIfOverlapping(enemy)) hasJumped = true;
+		}
 	}
+
 	return hasJumped;
 }
 
@@ -675,16 +722,17 @@ void FireTowerDamage(Enemy& enemy, int towerLevel)
 	int towerDamage {towerLevel + 1};
 
 	enemy.health -= towerDamage;
-	enemy.ailment = EnemyAilment::burnt;
+	enemy.burnStacks += towerLevel;
 }
 
 void ApplyBurnDamage()
 {
 	for (Enemy& enemy : g_Enemies)
 	{
-		if (enemy.ailment != EnemyAilment::burnt) continue;
+		if (enemy.burnStacks <= 0) continue;
 
 		--enemy.health;
+		--enemy.burnStacks;
 	}
 }
 
@@ -708,9 +756,11 @@ void PlaceTower()
 	switch (g_SelectedTowerType)
 	{
 	case TowerType::lightning:
+		if (!CanAfford(g_LightningTowerCost)) break;
 		PlaceLightningTower();
 		break;
 	case TowerType::fire:
+		if (!CanAfford(g_FireTowerCost)) break;
 		PlaceFireTower();
 		break;
 	default:
@@ -729,6 +779,8 @@ void PlaceLightningTower()
 		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
 	}
 	g_Towers.push_back(defaultLightningTower);
+
+	g_ActionPoints -= g_LightningTowerCost;
 }
 
 void PlaceFireTower()
@@ -741,6 +793,18 @@ void PlaceFireTower()
 		defaultFireTower.targetTile = defaultFireTower.gridPosition;
 	}
 	g_Towers.push_back(defaultFireTower);
+
+	g_ActionPoints -= g_FireTowerCost;
+}
+
+void AddActionPoints()
+{
+	g_ActionPointProgress += g_ActionPointGrowth;
+
+	if (g_ActionPointProgress == g_ActionPointGenerationThreshhold && g_ActionPoints < g_MaxActionPoints)
+	{
+		++g_ActionPoints;
+	}
 }
 #pragma endregion
 
@@ -821,9 +885,11 @@ void DeselectOtherTowers(size_t selectedTowerIndex)
 
 void SelectNewTargetTile(size_t towerIndex)
 {
+	const int selectionCost {1};
 	if (!IsPath(g_Grid[g_HoveredTile.row][g_HoveredTile.column].state)) return;
 	if (g_Towers.at(towerIndex).isSelected == false) return;
 	if (!IsTargetTileInRange(g_Towers.at(towerIndex))) return;
+	if (!CanAfford(selectionCost)) return;
 
 	g_Towers.at(towerIndex).targetTile = g_HoveredTile;
 }
