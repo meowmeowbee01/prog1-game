@@ -10,28 +10,45 @@ void Start()
 
 	InitializePath();
 
-	JumpOverlappingEnemies();
+	InitializeMenuButtons();
 }
 
 void Draw()
 {
-	ClearBackground(0.f, 0.f, 0.f);
+	
 
-	DrawGrid();
-	HighlightHoveredTile();
+	if (!g_StartScreen && !g_GameOver)
+	{
+		ClearBackground(0.f, 0.f, 0.f);
 
-	DrawEnemies();
+		DrawGrid();
+		HighlightHoveredTile();
 
-	DrawTowers();
+		DrawEnemies();
 
-	DrawPlayerHealth();
-	DrawPlayerActionPoints();
-	DrawSelectedTower();
+		DrawTowers();
+
+		DrawPlayerHealth();
+		DrawPlayerActionPoints();
+		DrawSelectedTower();
+	}
+	else if (!g_GameOver)
+	{
+		ClearBackground(0.3f, 0.3f, 0.8f);
+
+		DrawStartScreen();
+	}
+	else if (g_GameOver)
+	{
+		ClearBackground(0.8f, 0.2f, 0.2f);
+
+		DrawGameOverScreen();
+	}
 }
 
 void Update(float elapsedSec)
 {
-
+	UpdateStartScreen();
 }
 
 void End()
@@ -43,6 +60,7 @@ void End()
 #pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key)
 {
+	if (g_StartScreen || g_GameOver) return;
 	switch (key)
 	{
 	case SDL_KeyCode::SDLK_SPACE:
@@ -53,7 +71,6 @@ void OnKeyDownEvent(SDL_Keycode key)
 		break;
 	case SDLK_F3:
 		g_ActionPoints = 100;
-		std::cout << "Debug Mode\n";
 		break;
 	default:
 		break;
@@ -62,6 +79,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 
 void OnKeyUpEvent(SDL_Keycode key)
 {
+	if (g_StartScreen || g_GameOver) return;
 	ChangeTowerType(key);
 	IncreaseMaxEnergy(key);
 }
@@ -78,14 +96,25 @@ void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
 
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
-	if (e.button == 1)
+	if (g_StartScreen || g_GameOver)
 	{
-		PlaceTower();
-		SelectTower();
+		if (e.button == 1)
+		{
+			ClickMenuButton();
+		}
 	}
-	if (e.button == 3)
+	else if (!g_GameOver)
 	{
+		if (e.button == 1)
+		{
+			PlaceTower();
+			SelectTower();
+		}
+		if (e.button == 3)
+		{
+		}
 	}
+	
 }
 #pragma endregion
 
@@ -175,7 +204,7 @@ bool TileHasEnemy(int pathIndex)
 	return false;
 }
 
-size_t GetSelectedTower()
+size_t GetSelectedTowerIndex()
 {
 	for (size_t i = 0; i < g_Towers.size(); i++)
 	{
@@ -189,6 +218,7 @@ bool CanAfford(int price)
 {
 	return price <= g_ActionPoints;
 }
+
 #pragma endregion
 
 #pragma region start
@@ -241,6 +271,18 @@ void InitializeResources()
 	TextureFromFile("Resources/heart_red.png", g_HeartSprite);
 
 	TextureFromFile("Resources/EnergyTexture.png", g_ActionPointSprite);
+
+	TextureFromFile("Resources/button_wide_idle.png", g_IdleMenuButton);
+	TextureFromFile("Resources/button_wide_hover.png", g_HoveredMenuButton);
+
+	const int ptSize {50};
+	const Color4f textColor {1.f, 1.f, 1.f, 1.f};
+	const std::string fontPath {"Resources/GameFont.ttf"};
+	TextureFromString("Start Game", fontPath, ptSize, textColor, g_StartGameText);
+	TextureFromString("Quit Game", fontPath, ptSize, textColor, g_QuitGameText);
+
+	TextureFromString(g_GameTitleString, fontPath, ptSize, textColor, g_GameTitle);
+	TextureFromString("Game Over", fontPath, ptSize, textColor, g_GameOverText);
 }
 
 void InitializePath()
@@ -328,6 +370,34 @@ void InitializePath()
 			break;
 		}
 	}
+}
+
+void InitializeMenuButtons()
+{
+	Point2f buttonPosition
+	{
+		g_WindowWidth / 2 - g_ButtonWidth / 2,
+		g_WindowHeight / 3
+	};
+
+	float buttonDistance {50.f};
+
+	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	{
+		g_MenuButtons[i].position =
+			Rectf
+		{
+			buttonPosition.x,
+			buttonPosition.y + ((g_ButtonHeight + buttonDistance) * i),
+			g_ButtonWidth,
+			g_ButtonHeight
+		};
+
+		g_MenuButtons[i].texture = g_IdleMenuButton;
+	}
+
+	g_MenuButtons[0].type = ButtonType::start;
+	g_MenuButtons[1].type = ButtonType::quit;
 }
 #pragma endregion
 
@@ -575,6 +645,65 @@ void DrawSelectedTower()
 	const Rectf previewPosition {GetRectFromGridPosition(TileIndex{verticalOffset, g_Columns - 1})};
 	DrawTower(g_SelectedTowerType, 0, previewPosition);
 }
+
+void DrawStartScreen()
+{
+	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	{
+		DrawTexture(g_MenuButtons[i].texture, g_MenuButtons[i].position);
+	}
+
+	const Rectf startGameDstRect
+	{
+		g_MenuButtons[static_cast<int>(ButtonType::start)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
+		g_MenuButtons[static_cast<int>(ButtonType::start)].position.top,
+		g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.9f,
+		g_MenuButtons[static_cast<int>(ButtonType::start)].position.height * 0.95f
+	};
+	DrawTexture(g_StartGameText, startGameDstRect);
+
+	const Rectf quitGameDstRect
+	{
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.top,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.width * 0.9f,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.height * 0.95f
+	};
+	DrawTexture(g_QuitGameText, quitGameDstRect);
+
+	DrawTitle(g_GameTitle);
+}
+
+void DrawTitle(const Texture& text)
+{
+	const float gameTitleWidth {g_WindowWidth * 0.75f};
+	const float gameTitleHeight {g_WindowHeight / 7};
+	const Rectf gameTitleDstRect
+	{
+		g_WindowWidth / 2 - gameTitleWidth / 2,
+		g_WindowHeight / 10,
+		gameTitleWidth,
+		gameTitleHeight
+	};
+
+	DrawTexture(text, gameTitleDstRect);
+}
+
+void DrawGameOverScreen()
+{
+	DrawTexture(g_MenuButtons[static_cast<int>(ButtonType::quit)].texture, g_MenuButtons[static_cast<int>(ButtonType::quit)].position);
+
+	const Rectf quitGameDstRect
+	{
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.top,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.width * 0.9f,
+		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.height * 0.95f
+	};
+	DrawTexture(g_QuitGameText, quitGameDstRect);
+
+	DrawTitle(g_GameOverText);
+}
 #pragma endregion
 
 #pragma region gameLogic
@@ -697,8 +826,7 @@ void HandleReachedGoalEnemies()
 
 	if (g_PlayerHealth <= 0)
 	{
-		std::cout << "GAME OVER NOOB!\n";
-		//TODO: Add proper game over
+		g_GameOver = true;
 	}
 }
 
@@ -828,11 +956,11 @@ void AddActionPoints()
 {
 	g_ActionPointProgress += g_ActionPointGrowth;
 
-	if (g_ActionPointProgress == g_ActionPointGenerationThreshhold && g_ActionPoints < g_MaxActionPoints)
-	{
-		++g_ActionPoints;
-		g_ActionPointProgress = 0;
-	}
+	if (g_ActionPointProgress != g_ActionPointGenerationThreshhold) return;
+	g_ActionPointProgress = 0;
+
+	if (g_ActionPoints >= g_MaxActionPoints) return;
+	++g_ActionPoints;
 }
 #pragma endregion
 
@@ -859,6 +987,21 @@ bool UpdateHoveredTile()
 		}
 	}
 	return false;
+}
+
+void UpdateStartScreen()
+{
+	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	{
+		if (!IsPointInRect(g_MousePosition, g_MenuButtons[i].position))
+		{
+			g_MenuButtons[i].texture = g_HoveredMenuButton;
+		}
+		else
+		{
+			g_MenuButtons[i].texture = g_IdleMenuButton;
+		}
+	}
 }
 #pragma endregion
 
@@ -924,8 +1067,10 @@ void SelectNewTargetTile(size_t towerIndex)
 
 void UpgradeTower()
 {
-	if (g_Towers.at(GetSelectedTower()).level >= g_MaxLevel) return;
-	++g_Towers.at(GetSelectedTower()).level;
+	const int upgradeCost {4};
+	if (g_Towers.at(GetSelectedTowerIndex()).level >= g_MaxLevel) return;
+	if (g_ActionPoints < upgradeCost) return;
+	++g_Towers.at(GetSelectedTowerIndex()).level;
 }
 
 void ChangeTowerType(SDL_Keycode key)
@@ -953,6 +1098,27 @@ void IncreaseMaxEnergy(SDL_Keycode key)
 
 	++g_MaxActionPoints;
 	g_MaxActionPointProgress = 0;
+}
+
+void ClickMenuButton()
+{
+	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	{
+		if (!IsPointInRect(g_MousePosition, g_MenuButtons[i].position)) continue;
+
+		switch (g_MenuButtons[i].type)
+		{
+		case ButtonType::start:
+			g_StartScreen = false;
+			break;
+		case ButtonType::quit:
+			End();
+			std::exit(0);
+			break;
+		default:
+			break;
+		}
+	}
 }
 #pragma endregion
 #pragma endregion

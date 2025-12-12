@@ -5,7 +5,8 @@
 using namespace utils;
 
 #pragma region gameInformation
-std::string g_WindowTitle {"Prog1-Game - Unholy C {Tim Scheuer, Arno Buyckx} - 1GDE"};
+const std::string g_GameTitleString {"The Goobercide!"};
+std::string g_WindowTitle {g_GameTitleString + " - Unholy C {Tim Scheuer, Arno Buyckx} - 1GDE"};
 
 float g_WindowWidth {1000};
 float g_WindowHeight {700};
@@ -15,6 +16,17 @@ float g_WindowHeight {700};
 
 #pragma region ownDeclarations
 #pragma region enumsAndStructs
+enum class GameState
+{
+	menu,
+	playing,
+	gameOver
+};
+enum class ButtonType
+{
+	start,
+	quit
+};
 enum class MouseButtons
 {
 	idle,
@@ -47,6 +59,12 @@ enum class EnemyAilment
 {
 	none,
 	burnt
+};
+struct MenuButton
+{
+	Rectf position;
+	Texture texture;
+	ButtonType type;
 };
 struct Tile
 {
@@ -149,12 +167,31 @@ Texture g_CrosshairSprite {};
 Texture g_HeartSprite {};
 
 Texture g_ActionPointSprite {};
-#pragma endregion
+
+Texture g_IdleMenuButton {};
+Texture g_HoveredMenuButton {};
+
+Texture g_StartGameText {};
+Texture g_QuitGameText {};
+
+Texture g_GameTitle {};
+Texture g_GameOverText {};
+#pragma endregion textures
 
 Point2f g_MousePosition {};
 TileIndex g_HoveredTile {};
 
 int g_PlayerHealth {5};
+
+bool g_StartScreen {true};
+const float g_ButtonDistance {25.f};
+const float g_ButtonWidth {g_WindowWidth / 3};
+const float g_ButtonHeight {g_WindowHeight / 10};
+
+const int g_NumberOfStartMenuButtons {2};
+MenuButton g_MenuButtons[g_NumberOfStartMenuButtons] {};
+
+bool g_GameOver {false};
 #pragma region functions
 
 #pragma region utils
@@ -166,7 +203,7 @@ bool IsTileFree(TileIndex tileIndex);
 bool IsTargetTileInRange(const Tower& tower);
 bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
-size_t GetSelectedTower();
+size_t GetSelectedTowerIndex();
 bool CanAfford(int price);
 #pragma endregion
 
@@ -174,14 +211,17 @@ bool CanAfford(int price);
 
 void InitializeResources();
 void InitializePath();
+void InitializeMenuButtons();
 #pragma endregion
 
 #pragma region draw
 
 void DrawTile(TileIndex gridIndex);
 void DrawGrid();
+
 void DrawEnemies();
 void DrawEnemyHealth(const Enemy& enemy);
+
 void DrawTowers();
 void DrawTower(const Tower& tower);
 void DrawTower(const TowerType towerType, const int towerLevel, const Rectf& destinationRect);
@@ -193,6 +233,11 @@ void HighlightHoveredTile();
 void DrawPlayerHealth();
 void DrawPlayerActionPoints();
 void DrawSelectedTower();
+
+void DrawStartScreen();
+void DrawTitle(const Texture& text);
+
+void DrawGameOverScreen();
 #pragma endregion
 
 #pragma region gameLogic
@@ -225,6 +270,8 @@ void AddActionPoints();
 
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
+
+void UpdateStartScreen();
 #pragma endregion
 
 #pragma region end
@@ -240,6 +287,8 @@ void SelectNewTargetTile(size_t towerIndex);
 void UpgradeTower();
 void ChangeTowerType(SDL_Keycode key);
 void IncreaseMaxEnergy(SDL_Keycode key);
+
+void ClickMenuButton();
 #pragma endregion
 #pragma endregion
 #pragma endregion
