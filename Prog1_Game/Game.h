@@ -92,6 +92,8 @@ struct Tower
 	bool isSelected;
 	int range;
 	int level;
+	bool isShooting;
+	Point2f projectilePosition;
 };
 #pragma endregion
 GameState g_GameState {GameState::startMenu};
@@ -111,6 +113,8 @@ const int g_LightningTowerRange {1};
 const int g_FireTowerRange {2};
 const int g_LightningTowerCost {2};
 const int g_FireTowerCost {4};
+
+bool g_IsAnimationRunning {false};
 
 int g_TurnCounter {0};
 
@@ -148,7 +152,6 @@ Texture g_EnemySprites[g_NumEnemyTypes] {};
 
 Texture g_GrassTexture {};
 
-Texture g_PathTexture {};
 const int g_NumberOfPathTextures {6};
 std::string g_PathPath {"Resources/Path_"};
 Texture g_PathTextures[g_NumberOfPathTextures] {};
@@ -177,6 +180,9 @@ Texture g_QuitGameText {};
 
 Texture g_GameTitle {};
 Texture g_GameOverText {};
+
+Texture g_FireballTexture {};
+Texture g_LightningTexture {};
 #pragma endregion textures
 
 Point2f g_MousePosition {};
@@ -204,6 +210,7 @@ bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
 size_t GetSelectedTowerIndex();
 bool CanAfford(int price);
+bool IsAnimationRunning();
 #pragma endregion
 
 #pragma region start
@@ -226,8 +233,10 @@ void DrawTower(const Tower& tower);
 void DrawTower(const TowerType towerType, const int towerLevel, const Rectf& destinationRect);
 void DrawFireTower(const int level, const Rectf& destinationRect);
 void DrawLightningTower(const int level, const Rectf& destinationRect);
-void DrawRange(size_t towerIndex, int range);
+void DrawRange(const Tower& tower);
 void HighlightTargetTile(TileIndex targetTile);
+void DrawProjectile(Point2f& projectilePosition, const Texture& texture);
+
 void HighlightHoveredTile();
 void DrawPlayerHealth();
 void DrawPlayerActionPoints();
@@ -253,7 +262,8 @@ bool JumpIfOverlapping(Enemy& enemy);
 void HandleReachedGoalEnemies();
 void HandleDeadEnemies();
 
-void ActivateTowerEffects();
+void SetTowerAnimationFlag();
+void ActivateTowerEffects(Tower& tower);
 void LightningChainDamage(Enemy& enemy, int towerLevel);
 void FireTowerDamage(Enemy& enemy, int towerLevel);
 void ApplyBurnDamage();
@@ -269,6 +279,8 @@ void AddActionPoints();
 
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
+
+void UpdateProjectilePositions();
 
 void UpdateStartScreen();
 #pragma endregion

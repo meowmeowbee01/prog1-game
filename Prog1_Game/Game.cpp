@@ -48,6 +48,9 @@ void Draw()
 
 void Update(float elapsedSec)
 {
+	UpdateProjectilePositions();
+
+	if (g_GameState == GameState::playing) return;
 	UpdateStartScreen();
 }
 
@@ -61,6 +64,7 @@ void End()
 void OnKeyDownEvent(SDL_Keycode key)
 {
 	if (g_GameState != GameState::playing) return;
+	if (IsAnimationRunning()) return;
 	switch (key)
 	{
 	case SDLK_SPACE:
@@ -103,6 +107,7 @@ void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
 
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
+	if (IsAnimationRunning()) return;
 	switch (g_GameState)
 	{
 	case GameState::startMenu:
@@ -292,6 +297,9 @@ void InitializeResources()
 
 	TextureFromString(g_GameTitleString, fontPath, ptSize, textColor, g_GameTitle);
 	TextureFromString("Game Over", fontPath, ptSize, textColor, g_GameOverText);
+
+	TextureFromFile("Resources/FireBall.png", g_FireballTexture);
+	TextureFromFile("Resources/Lightning.png", g_LightningTexture);
 }
 
 void InitializePath()
@@ -504,9 +512,8 @@ void DrawEnemyHealth(const Enemy& enemy)
 
 void DrawTowers()
 {
-	for (size_t towerIndex {0}; towerIndex < g_Towers.size(); ++towerIndex)
+	for (Tower& tower : g_Towers)
 	{
-		const Tower tower {g_Towers.at(towerIndex)};
 		DrawTower(tower);
 
 		if (tower.isSelected)
@@ -517,7 +524,19 @@ void DrawTowers()
 			DrawRect(GetRectFromGridPosition(tower.gridPosition));
 
 			int range {tower.range};
-			DrawRange(towerIndex, range);
+			DrawRange(tower);
+		}
+
+		if (!tower.isShooting) continue;
+		
+		switch (tower.towerType)
+		{
+		case TowerType::lightning:
+ 			DrawProjectile(tower.projectilePosition, g_LightningTexture);
+			break;
+		case TowerType::fire:
+			DrawProjectile(tower.projectilePosition, g_FireballTexture);
+			break;
 		}
 	}
 }
@@ -552,10 +571,10 @@ void DrawLightningTower(const int level, const Rectf& destinationRect)
 	DrawTexture(g_LightningTowerSprites[level], destinationRect);
 }
 
-void DrawRange(size_t towerIndex, int range)
+void DrawRange(const Tower& tower)
 {
-	const TileIndex topLeftTile {g_Towers.at(towerIndex).gridPosition.row - range, g_Towers.at(towerIndex).gridPosition.column - range};
-	const TileIndex bottomRightTile {g_Towers.at(towerIndex).gridPosition.row + range, g_Towers.at(towerIndex).gridPosition.column + range};
+	const TileIndex topLeftTile {tower.gridPosition.row - tower.range, tower.gridPosition.column - tower.range};
+	const TileIndex bottomRightTile {tower.gridPosition.row + tower.range, tower.gridPosition.column + tower.range};
 	const Rectf topLeftRange
 	{
 		GetRectFromGridPosition(topLeftTile)
@@ -592,6 +611,19 @@ void DrawRange(size_t towerIndex, int range)
 void HighlightTargetTile(TileIndex targetTile)
 {
 	DrawTexture(g_CrosshairSprite, GetRectFromGridPosition(targetTile));
+}
+
+void DrawProjectile(Point2f& projectilePosition, const Texture& texture)
+{
+	const TileIndex genericTileIndex {1, 1};
+	Rectf dstRect
+	{
+		projectilePosition.x,
+		projectilePosition.y,
+		GetRectFromGridPosition(genericTileIndex).width,
+		GetRectFromGridPosition(genericTileIndex).height
+	};
+	DrawTexture(texture, dstRect);
 }
 
 void HighlightHoveredTile()
@@ -725,10 +757,8 @@ void AdvanceTurn()
 	SpawnEnemies();
 	KeepJumpingOverlappingAndHandleReachedGoal();
 
-	ActivateTowerEffects();
+	SetTowerAnimationFlag();
 	ApplyBurnDamage();
-
-	HandleDeadEnemies();
 
 	AddActionPoints();
 	++g_TurnCounter;
@@ -844,23 +874,33 @@ void HandleReachedGoalEnemies()
 	}
 }
 
-void ActivateTowerEffects()
+void SetTowerAnimationFlag()
 {
-	for (const Tower& tower : g_Towers)
+	for (Tower& tower : g_Towers)
 	{
-		for (Enemy& enemy : g_Enemies)
+		for (const Enemy& enemy : g_Enemies)
 		{
 			if (!IsOnSameTile(g_PathIndices.at(enemy.pathIndex), tower.targetTile)) continue;
 
-			switch (tower.towerType)
-			{
-			case TowerType::lightning:
-				LightningChainDamage(enemy, tower.level);
-				break;
-			case TowerType::fire:
-				FireTowerDamage(enemy, tower.level);
-				break;
-			}
+			tower.isShooting = true;
+		}
+	}
+}
+
+void ActivateTowerEffects(Tower& tower)
+{
+	for (Enemy& enemy : g_Enemies)
+	{
+		if (!IsOnSameTile(g_PathIndices.at(enemy.pathIndex), tower.targetTile)) continue;
+
+		switch (tower.towerType)
+		{
+		case TowerType::lightning:
+			LightningChainDamage(enemy, tower.level);
+			break;
+		case TowerType::fire:
+			FireTowerDamage(enemy, tower.level);
+			break;
 		}
 	}
 }
@@ -891,7 +931,7 @@ void FireTowerDamage(Enemy& enemy, int towerLevel)
 	int towerDamage {towerLevel + 1};
 
 	enemy.health -= towerDamage;
-	enemy.burnStacks += towerLevel;
+	enemy.burnStacks += towerDamage;
 }
 
 void ApplyBurnDamage()
@@ -942,7 +982,12 @@ void PlaceLightningTower()
 {
 	const bool selected {true};
 	const int level {0};
-	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), selected, g_LightningTowerRange, level};
+	Point2f projectilePosition
+	{
+		GetRectFromGridPosition(g_HoveredTile).left,
+		GetRectFromGridPosition(g_HoveredTile).top
+	};
+	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), selected, g_LightningTowerRange, level, false, projectilePosition};
 	if (!SetDefaultTargetTile(defaultLightningTower))
 	{
 		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
@@ -956,7 +1001,12 @@ void PlaceFireTower()
 {
 	const bool selected {true};
 	const int level {0};
-	Tower defaultFireTower {TowerType::fire, g_HoveredTile, g_PathIndices.at(0), selected, g_FireTowerRange, level};
+	Point2f projectilePosition
+	{
+		GetRectFromGridPosition(g_HoveredTile).left,
+		GetRectFromGridPosition(g_HoveredTile).top
+	};
+	Tower defaultFireTower {TowerType::fire, g_HoveredTile, g_PathIndices.at(0), selected, g_FireTowerRange, level, false, projectilePosition};
 	if (!SetDefaultTargetTile(defaultFireTower))
 	{
 		defaultFireTower.targetTile = defaultFireTower.gridPosition;
@@ -1003,6 +1053,50 @@ bool UpdateHoveredTile()
 	return false;
 }
 
+void UpdateProjectilePositions()
+{
+	for (Tower& tower : g_Towers)
+	{
+		if (!tower.isShooting) continue;
+
+		Point2f TargetPosition
+		{
+			GetRectFromGridPosition(tower.targetTile).left,
+			GetRectFromGridPosition(tower.targetTile).top
+		};
+
+		Point2f vector {Subtract(TargetPosition, tower.projectilePosition)};
+
+		Point2f normalizedVec {NormalizeOrZero(vector)};
+
+		tower.projectilePosition = Add(tower.projectilePosition, normalizedVec);
+
+		const float margin {1.f};
+		if (Distance(tower.projectilePosition, TargetPosition) > margin) continue;
+
+		tower.isShooting = false;
+
+		Point2f towerPosition
+		{
+			GetRectFromGridPosition(tower.gridPosition).left,
+			GetRectFromGridPosition(tower.gridPosition).top
+		};
+		tower.projectilePosition = towerPosition;
+		ActivateTowerEffects(tower);
+		HandleDeadEnemies();
+	}
+}
+
+bool IsAnimationRunning()
+{
+	for (Tower& tower : g_Towers)
+	{
+		if (!tower.isShooting) continue;
+		return true;
+	}
+	return false;
+}
+
 void UpdateStartScreen()
 {
 	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
@@ -1029,7 +1123,6 @@ void FreeResources()
 	}
 
 	DeleteTexture(g_GrassTexture);
-	DeleteTexture(g_PathTexture);
 	DeleteTexture(g_HoveredTileTexture);
 
 	for (int i {0}; i <= g_MaxLevel; ++i)
@@ -1038,6 +1131,21 @@ void FreeResources()
 		DeleteTexture(g_FireTowerSprites[i]);
 	}
 
+	for (int i {0}; i < g_NumberOfPathTextures; ++i)
+	{
+		DeleteTexture(g_PathTextures[i]);
+	}
+
+	DeleteTexture(g_CrosshairSprite);
+	DeleteTexture(g_HeartSprite);
+	DeleteTexture(g_ActionPointSprite);
+	DeleteTexture(g_IdleMenuButton);
+	DeleteTexture(g_HoveredMenuButton);
+	DeleteTexture(g_StartGameText);
+	DeleteTexture(g_QuitGameText);
+	DeleteTexture(g_GameTitle);
+	DeleteTexture(g_GameOverText);
+	DeleteTexture(g_FireballTexture);
 }
 #pragma endregion
 
