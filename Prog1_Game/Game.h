@@ -18,7 +18,7 @@ float g_WindowHeight {700};
 #pragma region enumsAndStructs
 enum class GameState
 {
-	menu,
+	startMenu,
 	playing,
 	gameOver
 };
@@ -94,20 +94,21 @@ struct Tower
 	int level;
 };
 #pragma endregion
+GameState g_GameState {GameState::startMenu};
+
 
 const int g_Rows {10};
 const int g_Columns {20};
 Tile g_Grid[g_Rows][g_Columns] {};
-int g_StartingRowIndex {3};
 std::vector<TileIndex> g_PathIndices {};
 
 std::vector<Enemy> g_Enemies;
 
 std::vector<Tower> g_Towers;
+TowerType g_SelectedTowerType {};
 const int g_MaxLevel {1};
 const int g_LightningTowerRange {1};
 const int g_FireTowerRange {2};
-TowerType g_SelectedTowerType {};
 const int g_LightningTowerCost {2};
 const int g_FireTowerCost {4};
 
@@ -123,9 +124,9 @@ int g_MaxActionPointProgress {};
 const int g_MaxActionPointIncreaseThreshhold {3};
 
 #pragma region scaleAndCenterGridConstants
-const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f};
+const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f}; //the screenspace rect where the grid will be
 const float g_SmallestGridLength {g_GridArea.width < g_GridArea.height ? g_GridArea.width : g_GridArea.height};
-const float g_Padding {g_SmallestGridLength * 0.025f}; //space between edge of screen and grid
+const float g_Padding {g_SmallestGridLength * 0.025f}; //space between edge of gridArea and grid
 const float g_Margin {1.f}; //space between grid elements
 const float g_MaxCellWidth {(g_GridArea.width - 2.f * g_Padding - static_cast<float>(g_Columns - 1) * g_Margin) / g_Columns};
 const float g_MaxCellHeight {(g_GridArea.height - 2.f * g_Padding - static_cast<float>(g_Rows - 1) * g_Margin) / g_Rows};
@@ -183,7 +184,6 @@ TileIndex g_HoveredTile {};
 
 int g_PlayerHealth {5};
 
-bool g_StartScreen {true};
 const float g_ButtonDistance {25.f};
 const float g_ButtonWidth {g_WindowWidth / 3};
 const float g_ButtonHeight {g_WindowHeight / 10};
@@ -191,7 +191,6 @@ const float g_ButtonHeight {g_WindowHeight / 10};
 const int g_NumberOfStartMenuButtons {2};
 MenuButton g_MenuButtons[g_NumberOfStartMenuButtons] {};
 
-bool g_GameOver {false};
 #pragma region functions
 
 #pragma region utils
@@ -285,8 +284,8 @@ void SelectTower();
 void DeselectOtherTowers(size_t selectedTowerIndex);
 void SelectNewTargetTile(size_t towerIndex);
 void UpgradeTower();
-void ChangeTowerType(SDL_Keycode key);
-void IncreaseMaxEnergy(SDL_Keycode key);
+void ChangeTowerType(TowerType type);
+void IncreaseMaxEnergy();
 
 void ClickMenuButton();
 #pragma endregion

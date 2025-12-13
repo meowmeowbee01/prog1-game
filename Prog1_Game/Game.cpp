@@ -15,10 +15,14 @@ void Start()
 
 void Draw()
 {
-	
-
-	if (!g_StartScreen && !g_GameOver)
+	switch (g_GameState)
 	{
+	case GameState::startMenu:
+		ClearBackground(0.3f, 0.3f, 0.8f);
+
+		DrawStartScreen();
+		break;
+	case GameState::playing:
 		ClearBackground(0.f, 0.f, 0.f);
 
 		DrawGrid();
@@ -31,18 +35,14 @@ void Draw()
 		DrawPlayerHealth();
 		DrawPlayerActionPoints();
 		DrawSelectedTower();
-	}
-	else if (!g_GameOver)
-	{
-		ClearBackground(0.3f, 0.3f, 0.8f);
-
-		DrawStartScreen();
-	}
-	else if (g_GameOver)
-	{
+		break;
+	case GameState::gameOver:
 		ClearBackground(0.8f, 0.2f, 0.2f);
 
 		DrawGameOverScreen();
+		break;
+	default:
+		break;
 	}
 }
 
@@ -60,14 +60,23 @@ void End()
 #pragma region inputHandling
 void OnKeyDownEvent(SDL_Keycode key)
 {
-	if (g_StartScreen || g_GameOver) return;
+	if (g_GameState != GameState::playing) return;
 	switch (key)
 	{
-	case SDL_KeyCode::SDLK_SPACE:
+	case SDLK_SPACE:
 		AdvanceTurn();
 		break;
-	case SDL_KeyCode::SDLK_u:
+	case SDLK_u:
 		UpgradeTower();
+		break;
+	case SDLK_m:
+		IncreaseMaxEnergy();
+		break;
+	case SDLK_1:
+		ChangeTowerType(TowerType::lightning);
+		break;
+	case SDLK_2:
+		ChangeTowerType(TowerType::fire);
 		break;
 	case SDLK_F3:
 		g_ActionPoints = 100;
@@ -79,9 +88,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 
 void OnKeyUpEvent(SDL_Keycode key)
 {
-	if (g_StartScreen || g_GameOver) return;
-	ChangeTowerType(key);
-	IncreaseMaxEnergy(key);
+
 }
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
@@ -96,25 +103,25 @@ void OnMouseDownEvent(const SDL_MouseButtonEvent& e)
 
 void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 {
-	if (g_StartScreen || g_GameOver)
+	switch (g_GameState)
 	{
+	case GameState::startMenu:
+	case GameState::gameOver:
 		if (e.button == 1)
 		{
 			ClickMenuButton();
 		}
-	}
-	else if (!g_GameOver)
-	{
+		break;
+	case GameState::playing:
 		if (e.button == 1)
 		{
 			PlaceTower();
 			SelectTower();
 		}
-		if (e.button == 3)
-		{
-		}
+		break;
+	default:
+		break;
 	}
-	
 }
 #pragma endregion
 
@@ -735,34 +742,39 @@ void AdvanceEnemies()
 
 void SpawnEnemies()
 {
-	const int startPathIndex {0};
-
-	const int gooberMaxHealth {4};
-	const int angryGooberMaxHealth {8};
-
-	const int burnStacks {0};
-
-	const int speed {1};
-	const int angrySpeed {2};
-
-	float spawnChance {0.05f};
-	if (g_Enemies.empty()) spawnChance = 1.f;
-	const float angryChance {g_TurnCounter / 1000.f};
+	const int minEnemies {5};
+	const int maxEnemies {15};
+	const int currentEnemies {static_cast<int>(g_Enemies.size())};
+	const float spawnChanceNumerator {static_cast<float>(currentEnemies - minEnemies)};
+	const float spawnChanceDenominator {static_cast<float>(maxEnemies - minEnemies)};
+	const float spawnChance {1.f - (spawnChanceNumerator / spawnChanceDenominator)};
 
 	if (RandomDecimal() < spawnChance)
 	{
-		const int batchSize {RandomIntInRange(1,15)};
+		const int minBatchSize {5};
+		const int maxBatchSize {static_cast<int>(spawnChance * (maxEnemies - minEnemies))};
+		if (maxBatchSize < minBatchSize) return;
+		const int batchSize {RandomIntInRange(minBatchSize, maxBatchSize)};
 
 		for (int i {0}; i < batchSize; ++i)
 		{
+			const int startPathIndex {0};
+			const int burnStacks {0};
+
+			const float angryChance {g_TurnCounter / 1000.f};
+
 			if (RandomDecimal() < angryChance)
 			{
-				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, angryGooberMaxHealth, angryGooberMaxHealth, burnStacks, angrySpeed};
+				const int angrySpeed {2};
+				const int maxHealth {4};
+				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, maxHealth, maxHealth, burnStacks, angrySpeed};
 				g_Enemies.push_back(newEnemy);
 			}
 			else
 			{
-				Enemy newEnemy {EnemyType::goober, startPathIndex, gooberMaxHealth, gooberMaxHealth, burnStacks, speed};
+				const int speed {1};
+				const int maximumHealth {4};
+				Enemy newEnemy {EnemyType::goober, startPathIndex, maximumHealth, maximumHealth, burnStacks, speed};
 				g_Enemies.push_back(newEnemy);
 			}
 		}
@@ -826,7 +838,7 @@ void HandleReachedGoalEnemies()
 
 	if (g_PlayerHealth <= 0)
 	{
-		g_GameOver = true;
+		g_GameState = GameState::gameOver;
 	}
 }
 
@@ -1073,23 +1085,14 @@ void UpgradeTower()
 	++g_Towers.at(GetSelectedTowerIndex()).level;
 }
 
-void ChangeTowerType(SDL_Keycode key)
+void ChangeTowerType(TowerType type)
 {
-	switch (key)
-	{
-	case SDLK_1:
-		g_SelectedTowerType = TowerType::lightning;
-		break;
-	case SDLK_2:
-		g_SelectedTowerType = TowerType::fire;
-		break;
-	}
+	g_SelectedTowerType = type;
 }
 
-void IncreaseMaxEnergy(SDL_Keycode key)
+void IncreaseMaxEnergy()
 {
-	if (key != SDLK_m) return;
-	if (g_ActionPoints != g_MaxActionPoints) return;
+	if (g_ActionPoints < g_MaxActionPoints) return;
 
 	g_ActionPoints = 0;
 	++g_MaxActionPointProgress;
@@ -1109,7 +1112,7 @@ void ClickMenuButton()
 		switch (g_MenuButtons[i].type)
 		{
 		case ButtonType::start:
-			g_StartScreen = false;
+			g_GameState = GameState::playing;
 			break;
 		case ButtonType::quit:
 			End();
