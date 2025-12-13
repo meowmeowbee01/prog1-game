@@ -186,12 +186,14 @@ bool SetDefaultTargetTile(Tower& tower)
 	for (int rowIndex {startTile.row - range}; rowIndex <= startTile.row + range; ++rowIndex)
 	{
 		if (rowIndex > g_Rows - 1 || rowIndex < 0) continue;
-		for (int columnIndex {startTile.column - range}; columnIndex <= startTile.column; ++columnIndex)
+		for (int columnIndex {startTile.column - range}; columnIndex <= startTile.column + range; ++columnIndex)
 		{
 			if (columnIndex > g_Columns - 1 || columnIndex < 0) continue;
 
-			if (g_Grid[rowIndex][columnIndex].state == TileState::empty ||
-				g_Grid[rowIndex][columnIndex].state == TileState::tower) continue;
+			const bool TileIsEmpty {g_Grid[rowIndex][columnIndex].state == TileState::empty};
+			const bool TileIsTower {g_Grid[rowIndex][columnIndex].state == TileState::empty};
+
+			if (TileIsEmpty || TileIsTower) continue;
 
 			tower.targetTile = TileIndex {rowIndex, columnIndex};
 			return true;
