@@ -206,7 +206,6 @@ bool IsOnSameTile(TileIndex a, TileIndex b);
 Rectf GetRectFromGridPosition(TileIndex gridIndex);
 bool IsTileFree(TileIndex tileIndex);
 bool IsTargetTileInRange(const Tower& tower);
-bool SetDefaultTargetTile(Tower& tower);
 bool TileHasEnemy(int pathIndex);
 size_t GetSelectedTowerIndex();
 bool CanAfford(int price);
@@ -263,7 +262,7 @@ void HandleReachedGoalEnemies();
 void HandleDeadEnemies();
 
 void SetTowerAnimationFlag();
-void ActivateTowerEffects(Tower& tower);
+void ActivateTowerEffects(const Tower& tower);
 void LightningChainDamage(Enemy& enemy, int towerLevel);
 void FireTowerDamage(Enemy& enemy, int towerLevel);
 void ApplyBurnDamage();
@@ -280,7 +279,7 @@ void AddActionPoints();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
 
-void UpdateProjectilePositions();
+void UpdateProjectilePositions(float elapsedSec);
 
 void UpdateStartScreen();
 #pragma endregion

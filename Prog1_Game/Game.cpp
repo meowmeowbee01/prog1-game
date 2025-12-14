@@ -48,7 +48,7 @@ void Draw()
 
 void Update(float elapsedSec)
 {
-	UpdateProjectilePositions();
+	UpdateProjectilePositions(elapsedSec);
 
 	if (g_GameState == GameState::playing) return;
 	UpdateStartScreen();
@@ -181,30 +181,6 @@ bool IsTargetTileInRange(const Tower& tower)
 		return false;
 	}
 	return true;
-}
-
-bool SetDefaultTargetTile(Tower& tower)
-{
-	const TileIndex startTile {tower.gridPosition};
-	const int range {tower.range};
-
-	for (int rowIndex {startTile.row - range}; rowIndex <= startTile.row + range; ++rowIndex)
-	{
-		if (rowIndex > g_Rows - 1 || rowIndex < 0) continue;
-		for (int columnIndex {startTile.column - range}; columnIndex <= startTile.column + range; ++columnIndex)
-		{
-			if (columnIndex > g_Columns - 1 || columnIndex < 0) continue;
-
-			const bool TileIsEmpty {g_Grid[rowIndex][columnIndex].state == TileState::empty};
-			const bool TileIsTower {g_Grid[rowIndex][columnIndex].state == TileState::empty};
-
-			if (TileIsEmpty || TileIsTower) continue;
-
-			tower.targetTile = TileIndex {rowIndex, columnIndex};
-			return true;
-		}
-	}
-	return false;
 }
 
 bool TileHasEnemy(int pathIndex)
@@ -528,11 +504,11 @@ void DrawTowers()
 		}
 
 		if (!tower.isShooting) continue;
-		
+
 		switch (tower.towerType)
 		{
 		case TowerType::lightning:
- 			DrawProjectile(tower.projectilePosition, g_LightningTexture);
+			DrawProjectile(tower.projectilePosition, g_LightningTexture);
 			break;
 		case TowerType::fire:
 			DrawProjectile(tower.projectilePosition, g_FireballTexture);
@@ -744,6 +720,8 @@ void DrawGameOverScreen()
 	DrawTexture(g_QuitGameText, quitGameDstRect);
 
 	DrawTitle(g_GameOverText);
+	//TODO: show the turn reached
+	std::cout << g_TurnCounter << std::endl;
 }
 #pragma endregion
 
@@ -774,8 +752,8 @@ void AdvanceEnemies()
 
 void SpawnEnemies()
 {
-	const int minEnemies {5};
-	const int maxEnemies {15};
+	const int minEnemies {3 + (g_TurnCounter / 50)};
+	const int maxEnemies {5 + (g_TurnCounter / 30)};
 	const int currentEnemies {static_cast<int>(g_Enemies.size())};
 	const float spawnChanceNumerator {static_cast<float>(currentEnemies - minEnemies)};
 	const float spawnChanceDenominator {static_cast<float>(maxEnemies - minEnemies)};
@@ -797,9 +775,9 @@ void SpawnEnemies()
 
 			if (RandomDecimal() < angryChance)
 			{
-				const int angrySpeed {2};
-				const int maxHealth {4};
-				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, maxHealth, maxHealth, burnStacks, angrySpeed};
+				const int speed {2};
+				const int maxHealth {6};
+				Enemy newEnemy {EnemyType::angryGoober, startPathIndex, maxHealth, maxHealth, burnStacks, speed};
 				g_Enemies.push_back(newEnemy);
 			}
 			else
@@ -887,7 +865,7 @@ void SetTowerAnimationFlag()
 	}
 }
 
-void ActivateTowerEffects(Tower& tower)
+void ActivateTowerEffects(const Tower& tower)
 {
 	for (Enemy& enemy : g_Enemies)
 	{
@@ -988,10 +966,7 @@ void PlaceLightningTower()
 		GetRectFromGridPosition(g_HoveredTile).top
 	};
 	Tower defaultLightningTower {TowerType::lightning, g_HoveredTile, g_PathIndices.at(0), selected, g_LightningTowerRange, level, false, projectilePosition};
-	if (!SetDefaultTargetTile(defaultLightningTower))
-	{
-		defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
-	}
+	defaultLightningTower.targetTile = defaultLightningTower.gridPosition;
 	g_Towers.push_back(defaultLightningTower);
 
 	g_ActionPoints -= g_LightningTowerCost;
@@ -1007,10 +982,7 @@ void PlaceFireTower()
 		GetRectFromGridPosition(g_HoveredTile).top
 	};
 	Tower defaultFireTower {TowerType::fire, g_HoveredTile, g_PathIndices.at(0), selected, g_FireTowerRange, level, false, projectilePosition};
-	if (!SetDefaultTargetTile(defaultFireTower))
-	{
-		defaultFireTower.targetTile = defaultFireTower.gridPosition;
-	}
+	defaultFireTower.targetTile = defaultFireTower.gridPosition;
 	g_Towers.push_back(defaultFireTower);
 
 	g_ActionPoints -= g_FireTowerCost;
@@ -1053,8 +1025,9 @@ bool UpdateHoveredTile()
 	return false;
 }
 
-void UpdateProjectilePositions()
+void UpdateProjectilePositions(float elapsedSec)
 {
+	const float targetFrameRate {60.f};
 	for (Tower& tower : g_Towers)
 	{
 		if (!tower.isShooting) continue;
@@ -1065,13 +1038,14 @@ void UpdateProjectilePositions()
 			GetRectFromGridPosition(tower.targetTile).top
 		};
 
-		Point2f vector {Subtract(TargetPosition, tower.projectilePosition)};
+		const Point2f vector {Subtract(TargetPosition, tower.projectilePosition)};
+		const Point2f normalizedVector {NormalizeOrZero(vector)};
+		const float speed {5.f};
+		const Point2f scaledVector {Scale(Scale(normalizedVector, elapsedSec * targetFrameRate) ,speed)};
 
-		Point2f normalizedVec {NormalizeOrZero(vector)};
+		tower.projectilePosition = Add(tower.projectilePosition, scaledVector);
 
-		tower.projectilePosition = Add(tower.projectilePosition, normalizedVec);
-
-		const float margin {1.f};
+		const float margin {1.f * speed};
 		if (Distance(tower.projectilePosition, TargetPosition) > margin) continue;
 
 		tower.isShooting = false;
@@ -1178,13 +1152,23 @@ void DeselectOtherTowers(size_t selectedTowerIndex)
 
 void SelectNewTargetTile(size_t towerIndex)
 {
-	const int selectionCost {1};
-	if (!IsPath(g_Grid[g_HoveredTile.row][g_HoveredTile.column].state)) return;
-	if (g_Towers.at(towerIndex).isSelected == false) return;
-	if (!IsTargetTileInRange(g_Towers.at(towerIndex))) return;
-	if (!CanAfford(selectionCost)) return;
+	Tower& tower {g_Towers.at(towerIndex)};
 
-	g_Towers.at(towerIndex).targetTile = g_HoveredTile;
+	const int selectionCost {1};
+	if (tower.isSelected == false) return;
+	if (!IsPath(g_Grid[g_HoveredTile.row][g_HoveredTile.column].state)) return;
+	if (!IsTargetTileInRange(g_Towers.at(towerIndex))) return;
+	if (IsOnSameTile(tower.targetTile, tower.gridPosition))
+	{
+		tower.targetTile = g_HoveredTile;
+	}
+	else
+	{
+		if (!CanAfford(selectionCost)) return;
+		tower.targetTile = g_HoveredTile;
+		g_ActionPoints -= selectionCost;
+	}
+
 }
 
 void UpgradeTower()
@@ -1193,6 +1177,7 @@ void UpgradeTower()
 	if (g_Towers.at(GetSelectedTowerIndex()).level >= g_MaxLevel) return;
 	if (g_ActionPoints < upgradeCost) return;
 	++g_Towers.at(GetSelectedTowerIndex()).level;
+	g_ActionPoints -= upgradeCost;
 }
 
 void ChangeTowerType(TowerType type)
