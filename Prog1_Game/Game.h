@@ -116,14 +116,14 @@ const int g_FireTowerCost {4};
 
 bool g_IsAnimationRunning {false};
 
-int g_TurnCounter {0};
+int g_TurnCounter {};
 
-int g_ActionPoints {2};
+int g_ActionPoints {};
 int g_ActionPointGrowth {1};
 int g_ActionPointProgress {};
 const int g_ActionPointGenerationThreshhold {5};
 
-int g_MaxActionPoints {3};
+int g_MaxActionPoints {};
 int g_MaxActionPointProgress {};
 const int g_MaxActionPointIncreaseThreshhold {3};
 
@@ -188,7 +188,7 @@ Texture g_LightningTexture {};
 Point2f g_MousePosition {};
 TileIndex g_HoveredTile {};
 
-int g_PlayerHealth {5};
+int g_PlayerHealth {};
 
 const float g_ButtonDistance {25.f};
 const float g_ButtonWidth {g_WindowWidth / 3};
@@ -215,7 +215,9 @@ bool IsAnimationRunning();
 #pragma region start
 
 void InitializeResources();
+void ClearGrid();
 void InitializePath();
+void ResetGame();
 void InitializeMenuButtons();
 #pragma endregion
 

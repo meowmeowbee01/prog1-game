@@ -8,9 +8,19 @@ void Start()
 {
 	InitializeResources();
 
-	InitializePath();
-
 	InitializeMenuButtons();
+
+	ResetGame();
+
+	std::cout << "Controls:\n";
+	std::cout << "Space:\t\t\t\tadvance turn\t\t\t\t+0.2 Energy\n";
+	std::cout << "Click on empty grass tile:\tplace tower\t\t\t\t-2 for electric / -4 for fire\n";
+	std::cout << "Click on tower:\t\t\tselect tower\t\t\t\t/\n";
+	std::cout << "Click on path:\t\t\ttarget path with selected tower\t\t-1 energy\n";
+	std::cout << "U:\t\t\t\tupgrade selected tower\t\t\t-1 energy\n";
+	std::cout << "M:\t\t\t\tincrease max energy (by 1/3)\t\t-all energy\n";
+	std::cout << "1:\t\t\t\tswitch to electric tower\t\t/\n";
+	std::cout << "2:\t\t\t\tswitch to fire tower\t\t\t/\n";
 }
 
 void Draw()
@@ -56,6 +66,7 @@ void Update(float elapsedSec)
 
 void End()
 {
+	std::cout << g_TurnCounter << std::endl;
 	FreeResources();
 }
 #pragma endregion
@@ -85,6 +96,8 @@ void OnKeyDownEvent(SDL_Keycode key)
 	case SDLK_F3:
 		g_ActionPoints = 100;
 		break;
+	case SDLK_r:
+		ResetGame();
 	default:
 		break;
 	}
@@ -278,6 +291,17 @@ void InitializeResources()
 	TextureFromFile("Resources/Lightning.png", g_LightningTexture);
 }
 
+void ClearGrid()
+{
+	for (int i {0}; i < g_Rows; ++i)
+	{
+		for (int j {0}; j < g_Columns; ++j)
+		{
+			g_Grid[i][j].state = TileState::empty;
+		}
+	}
+}
+
 void InitializePath()
 {
 	enum class Direction
@@ -363,6 +387,21 @@ void InitializePath()
 			break;
 		}
 	}
+}
+
+void ResetGame()
+{
+	g_PlayerHealth = 5;
+	g_ActionPoints = 2;
+	g_MaxActionPoints = 3;
+	g_ActionPointGrowth = 0;
+	g_MaxActionPointProgress = 0;
+	g_TurnCounter = 0;
+	g_Towers.clear();
+	g_PathIndices.clear();
+	g_Enemies.clear();
+	ClearGrid();
+	InitializePath();
 }
 
 void InitializeMenuButtons()
@@ -721,7 +760,6 @@ void DrawGameOverScreen()
 
 	DrawTitle(g_GameOverText);
 	//TODO: show the turn reached
-	std::cout << g_TurnCounter << std::endl;
 }
 #pragma endregion
 
