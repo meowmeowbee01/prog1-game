@@ -943,7 +943,7 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 
 	enemy.health -= towerDamage;
 
-	while (TileHasEnemy(pathIndex) && currentChain < maxChain)
+	while (currentChain < maxChain && TileHasEnemy(pathIndex))
 	{
 		for (Enemy& chainEnemy : g_Enemies) //find enemy behind hit enemy
 		{
@@ -952,6 +952,7 @@ void LightningChainDamage(Enemy& enemy, int towerLevel)
 		}
 		--pathIndex;
 		++currentChain;
+		if (pathIndex < 0) break;
 	}
 }
 
