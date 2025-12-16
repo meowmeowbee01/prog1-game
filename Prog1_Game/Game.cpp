@@ -18,7 +18,7 @@ void Start()
 	std::cout << "Click on tower:\t\t\tselect tower\t\t\t\t/\n";
 	std::cout << "Click on path:\t\t\ttarget path with selected tower\t\t-1 energy\n";
 	std::cout << "U:\t\t\t\tupgrade selected tower\t\t\t-1 energy\n";
-	std::cout << "M:\t\t\t\tincrease max energy (by 1/3)\t\t-all energy\n";
+	std::cout << "M:\t\t\t\tincrease max energy \t\t\t-all energy\n";
 	std::cout << "1:\t\t\t\tswitch to electric tower\t\t/\n";
 	std::cout << "2:\t\t\t\tswitch to fire tower\t\t\t/\n";
 }
@@ -98,6 +98,7 @@ void OnKeyDownEvent(SDL_Keycode key)
 		break;
 	case SDLK_r:
 		ResetGame();
+		break;
 	default:
 		break;
 	}
@@ -394,7 +395,7 @@ void ResetGame()
 	g_PlayerHealth = 5;
 	g_ActionPoints = 2;
 	g_MaxActionPoints = 3;
-	g_ActionPointGrowth = 0;
+	g_ActionPointGrowth = 1;
 	g_MaxActionPointProgress = 0;
 	g_TurnCounter = 0;
 	g_Towers.clear();

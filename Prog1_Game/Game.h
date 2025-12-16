@@ -125,7 +125,7 @@ const int g_ActionPointGenerationThreshhold {5};
 
 int g_MaxActionPoints {};
 int g_MaxActionPointProgress {};
-const int g_MaxActionPointIncreaseThreshhold {3};
+const int g_MaxActionPointIncreaseThreshhold {1};
 
 #pragma region scaleAndCenterGridConstants
 const Rectf g_GridArea {0.f, g_WindowHeight * 0.2f, g_WindowWidth, g_WindowHeight * 0.8f}; //the screenspace rect where the grid will be
