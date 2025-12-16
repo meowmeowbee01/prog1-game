@@ -25,7 +25,8 @@ enum class GameState
 enum class ButtonType
 {
 	start,
-	quit
+	quit,
+	reset
 };
 enum class MouseButtons
 {
@@ -180,9 +181,15 @@ Texture g_QuitGameText {};
 
 Texture g_GameTitle {};
 Texture g_GameOverText {};
+Texture g_ResetGameText {};
+
+const int g_NumberOfButtonTexts {3};
+Texture g_ButtonText[g_NumberOfButtonTexts] {};
 
 Texture g_FireballTexture {};
 Texture g_LightningTexture {};
+
+Texture g_Score {};
 #pragma endregion textures
 
 Point2f g_MousePosition {};
@@ -194,8 +201,8 @@ const float g_ButtonDistance {25.f};
 const float g_ButtonWidth {g_WindowWidth / 3};
 const float g_ButtonHeight {g_WindowHeight / 10};
 
-const int g_NumberOfStartMenuButtons {2};
-MenuButton g_MenuButtons[g_NumberOfStartMenuButtons] {};
+const int g_NumberOfMenuButtons {3};
+MenuButton g_MenuButtons[g_NumberOfMenuButtons] {};
 
 #pragma region functions
 
@@ -261,6 +268,7 @@ void AdvanceEnemies();
 bool JumpOverlappingEnemies();
 bool JumpIfOverlapping(Enemy& enemy);
 void HandleReachedGoalEnemies();
+void GameOver();
 void HandleDeadEnemies();
 
 void SetTowerAnimationFlag();
@@ -281,9 +289,9 @@ void AddActionPoints();
 void UpdateMousePosition(const SDL_MouseMotionEvent& e);
 bool UpdateHoveredTile();
 
-void UpdateProjectilePositions(float elapsedSec);
+void TowerShoot(float elapsedSec);
 
-void UpdateStartScreen();
+void UpdateMenuButtons();
 #pragma endregion
 
 #pragma region end
@@ -299,6 +307,8 @@ void SelectNewTargetTile(size_t towerIndex);
 void UpgradeTower();
 void ChangeTowerType(TowerType type);
 void IncreaseMaxEnergy();
+
+void PrintGameInfo();
 
 void ClickMenuButton();
 #pragma endregion

@@ -12,15 +12,6 @@ void Start()
 
 	ResetGame();
 
-	std::cout << "Controls:\n";
-	std::cout << "Space:\t\t\t\tadvance turn\t\t\t\t+0.2 Energy\n";
-	std::cout << "Click on empty grass tile:\tplace tower\t\t\t\t-2 for electric / -4 for fire\n";
-	std::cout << "Click on tower:\t\t\tselect tower\t\t\t\t/\n";
-	std::cout << "Click on path:\t\t\ttarget path with selected tower\t\t-1 energy\n";
-	std::cout << "U:\t\t\t\tupgrade selected tower\t\t\t-1 energy\n";
-	std::cout << "M:\t\t\t\tincrease max energy \t\t\t-all energy\n";
-	std::cout << "1:\t\t\t\tswitch to electric tower\t\t/\n";
-	std::cout << "2:\t\t\t\tswitch to fire tower\t\t\t/\n";
 }
 
 void Draw()
@@ -58,15 +49,14 @@ void Draw()
 
 void Update(float elapsedSec)
 {
-	UpdateProjectilePositions(elapsedSec);
+	TowerShoot(elapsedSec);
 
 	if (g_GameState == GameState::playing) return;
-	UpdateStartScreen();
+	UpdateMenuButtons();
 }
 
 void End()
 {
-	std::cout << g_TurnCounter << std::endl;
 	FreeResources();
 }
 #pragma endregion
@@ -106,7 +96,9 @@ void OnKeyDownEvent(SDL_Keycode key)
 
 void OnKeyUpEvent(SDL_Keycode key)
 {
+	if (key != SDLK_i) return;
 
+	PrintGameInfo();
 }
 
 void OnMouseMotionEvent(const SDL_MouseMotionEvent& e)
@@ -126,13 +118,13 @@ void OnMouseUpEvent(const SDL_MouseButtonEvent& e)
 	{
 	case GameState::startMenu:
 	case GameState::gameOver:
-		if (e.button == 1)
+		if (e.button == static_cast<int>(MouseButtons::leftClick))
 		{
 			ClickMenuButton();
 		}
 		break;
 	case GameState::playing:
-		if (e.button == 1)
+		if (e.button == static_cast<int>(MouseButtons::leftClick))
 		{
 			PlaceTower();
 			SelectTower();
@@ -284,6 +276,11 @@ void InitializeResources()
 	const std::string fontPath {"Resources/GameFont.ttf"};
 	TextureFromString("Start Game", fontPath, ptSize, textColor, g_StartGameText);
 	TextureFromString("Quit Game", fontPath, ptSize, textColor, g_QuitGameText);
+	TextureFromString("Reset Game", fontPath, ptSize, textColor, g_ResetGameText);
+
+	g_ButtonText[0] = g_StartGameText;
+	g_ButtonText[1] = g_QuitGameText;
+	g_ButtonText[2] = g_ResetGameText;
 
 	TextureFromString(g_GameTitleString, fontPath, ptSize, textColor, g_GameTitle);
 	TextureFromString("Game Over", fontPath, ptSize, textColor, g_GameOverText);
@@ -415,7 +412,7 @@ void InitializeMenuButtons()
 
 	float buttonDistance {50.f};
 
-	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	for (int i {0}; i < g_NumberOfMenuButtons; ++i)
 	{
 		g_MenuButtons[i].position =
 			Rectf
@@ -431,6 +428,7 @@ void InitializeMenuButtons()
 
 	g_MenuButtons[0].type = ButtonType::start;
 	g_MenuButtons[1].type = ButtonType::quit;
+	g_MenuButtons[2].type = ButtonType::reset;
 }
 #pragma endregion
 
@@ -705,28 +703,19 @@ void DrawSelectedTower()
 
 void DrawStartScreen()
 {
-	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	for (int i {0}; i < g_NumberOfMenuButtons - 1; ++i)
 	{
 		DrawTexture(g_MenuButtons[i].texture, g_MenuButtons[i].position);
+
+		const Rectf destinationRect
+		{
+			g_MenuButtons[i].position.left + g_MenuButtons[i].position.width * 0.05f,
+			g_MenuButtons[i].position.top,
+			g_MenuButtons[i].position.width * 0.9f,
+			g_MenuButtons[i].position.height * 0.95f
+		};
+		DrawTexture(g_ButtonText[i], destinationRect);
 	}
-
-	const Rectf startGameDstRect
-	{
-		g_MenuButtons[static_cast<int>(ButtonType::start)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
-		g_MenuButtons[static_cast<int>(ButtonType::start)].position.top,
-		g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.9f,
-		g_MenuButtons[static_cast<int>(ButtonType::start)].position.height * 0.95f
-	};
-	DrawTexture(g_StartGameText, startGameDstRect);
-
-	const Rectf quitGameDstRect
-	{
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.top,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.width * 0.9f,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.height * 0.95f
-	};
-	DrawTexture(g_QuitGameText, quitGameDstRect);
 
 	DrawTitle(g_GameTitle);
 }
@@ -748,19 +737,32 @@ void DrawTitle(const Texture& text)
 
 void DrawGameOverScreen()
 {
-	DrawTexture(g_MenuButtons[static_cast<int>(ButtonType::quit)].texture, g_MenuButtons[static_cast<int>(ButtonType::quit)].position);
-
-	const Rectf quitGameDstRect
+	for (int i {1}; i < g_NumberOfMenuButtons; ++i)
 	{
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.left + g_MenuButtons[static_cast<int>(ButtonType::start)].position.width * 0.05f,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.top,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.width * 0.9f,
-		g_MenuButtons[static_cast<int>(ButtonType::quit)].position.height * 0.95f
+		DrawTexture(g_MenuButtons[i].texture, g_MenuButtons[i].position);
+
+		const Rectf destinationRect
+		{
+			g_MenuButtons[i].position.left + g_MenuButtons[i].position.width * 0.05f,
+			g_MenuButtons[i].position.top,
+			g_MenuButtons[i].position.width * 0.9f,
+			g_MenuButtons[i].position.height * 0.95f
+		};
+		DrawTexture(g_ButtonText[i], destinationRect);
+	}
+
+	const float scoreWidth {g_WindowWidth * 0.5f};
+	const float scoreHeight {g_WindowWidth / 20};
+	const Rectf scoreDst
+	{
+		0.f,
+		g_WindowHeight - scoreHeight,
+		scoreWidth,
+		scoreHeight
 	};
-	DrawTexture(g_QuitGameText, quitGameDstRect);
+	DrawTexture(g_Score, scoreDst);
 
 	DrawTitle(g_GameOverText);
-	//TODO: show the turn reached
 }
 #pragma endregion
 
@@ -885,10 +887,20 @@ void HandleReachedGoalEnemies()
 		}
 	);
 
-	if (g_PlayerHealth <= 0)
-	{
-		g_GameState = GameState::gameOver;
-	}
+	if (g_PlayerHealth > 0) return;
+
+	GameOver();
+}
+
+void GameOver()
+{
+	const int ptSize {50};
+	const Color4f textColor {1.f, 1.f, 1.f, 1.f};
+	const std::string fontPath {"Resources/GameFont.ttf"};
+
+	TextureFromString("You reached turn " + std::to_string(g_TurnCounter), fontPath, ptSize, textColor, g_Score);
+
+	g_GameState = GameState::gameOver;
 }
 
 void SetTowerAnimationFlag()
@@ -972,6 +984,7 @@ void HandleDeadEnemies()
 		}
 	);
 }
+
 
 void PlaceTower()
 {
@@ -1064,7 +1077,7 @@ bool UpdateHoveredTile()
 	return false;
 }
 
-void UpdateProjectilePositions(float elapsedSec)
+void TowerShoot(float elapsedSec)
 {
 	const float targetFrameRate {60.f};
 	for (Tower& tower : g_Towers)
@@ -1110,9 +1123,9 @@ bool IsAnimationRunning()
 	return false;
 }
 
-void UpdateStartScreen()
+void UpdateMenuButtons()
 {
-	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	for (int i {0}; i < g_NumberOfMenuButtons; ++i)
 	{
 		if (!IsPointInRect(g_MousePosition, g_MenuButtons[i].position))
 		{
@@ -1237,9 +1250,24 @@ void IncreaseMaxEnergy()
 	g_MaxActionPointProgress = 0;
 }
 
+void PrintGameInfo()
+{
+	std::cout << "Controls:\n";
+	std::cout << "Space:\t\t\t\tadvance turn\t\t\t\t+0.2 Energy\n";
+	std::cout << "Click on empty grass tile:\tplace tower\t\t\t\t-" << g_LightningTowerCost << " for electric";
+	std::cout << "/ -" << g_FireTowerCost << " for fire\n";
+	std::cout << "Click on tower:\t\t\tselect tower\t\t\t\t/\n";
+	std::cout << "Click on path:\t\t\ttarget path with selected tower\t\t-1 energy\n";
+	std::cout << "U:\t\t\t\tupgrade selected tower\t\t\t-4 energy\n";
+	std::cout << "M:\t\t\t\tincrease max energy \t\t\t-all energy\n";
+	std::cout << "R:\t\t\t\treset game \t\t\t/\n";
+	std::cout << "1:\t\t\t\tswitch to electric tower\t\t/\n";
+	std::cout << "2:\t\t\t\tswitch to fire tower\t\t\t/\n";
+}
+
 void ClickMenuButton()
 {
-	for (int i {0}; i < g_NumberOfStartMenuButtons; ++i)
+	for (int i {0}; i < g_NumberOfMenuButtons; ++i)
 	{
 		if (!IsPointInRect(g_MousePosition, g_MenuButtons[i].position)) continue;
 
@@ -1251,6 +1279,10 @@ void ClickMenuButton()
 		case ButtonType::quit:
 			End();
 			std::exit(0);
+			break;
+		case ButtonType::reset:
+			ResetGame();
+			g_GameState = GameState::startMenu;
 			break;
 		default:
 			break;
