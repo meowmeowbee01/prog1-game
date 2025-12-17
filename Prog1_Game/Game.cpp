@@ -393,6 +393,7 @@ void ResetGame()
 	g_ActionPoints = 2;
 	g_MaxActionPoints = 3;
 	g_ActionPointGrowth = 1;
+	g_ActionPointProgress = 0;
 	g_MaxActionPointProgress = 0;
 	g_TurnCounter = 0;
 	g_Towers.clear();
@@ -985,7 +986,6 @@ void HandleDeadEnemies()
 		}
 	);
 }
-
 
 void PlaceTower()
 {

@@ -120,7 +120,7 @@ bool g_IsAnimationRunning {false};
 int g_TurnCounter {};
 
 int g_ActionPoints {};
-int g_ActionPointGrowth {1};
+int g_ActionPointGrowth {};
 int g_ActionPointProgress {};
 const int g_ActionPointGenerationThreshhold {5};
 
